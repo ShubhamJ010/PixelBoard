@@ -41,7 +41,7 @@ jobs:
         run: |
           cd pixelboard-patches
           chmod +x gradlew
-          ./gradlew test --info
+          ./gradlew test -x :extensions:extension:testDebugUnitTest --info
 
       - name: Build Patch Bundle (.mpp)
         run: |

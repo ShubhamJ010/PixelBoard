@@ -330,30 +330,7 @@ A small companion service could feed clips into a shared store that the provider
 
 ---
 
-## 11. Manual Test Plan
-
-1. Enable PixelBoard, set it as the active IME.
-2. Open a text field → **copy** a known string → confirm it appears in the history and via the
-   provider.
-3. Switch to a second IME → **copy** a different known string → confirm it is **absent** from the
-   history (expected behaviour) and still on the system clipboard.
-4. Switch back to PixelBoard → open a text field → confirm the back-filled entry appears exactly
-   once.
-5. Open another text field without copying anything → confirm no second copy of the same entry
-   appears.
-6. Copy the same string twice in a row → confirm no duplicate row is created.
-7. Copy inside a password field → confirm the entry is stored with `sensitive = 1` and stays
-   hidden unless **Include sensitive clips** is enabled.
-8. Toggle **Allow external apps to read clipboard history** off → confirm the provider denies
-   external callers for both `/clips` and `/primary`.
-9. Rotate the access token → confirm the old token is rejected and the new one accepted.
-10. While another IME is active → query `/primary` → confirm it returns an empty cursor.
-11. While PixelBoard is active → copy something → query `/primary` → confirm it returns the copied
-    text.
-
----
-
-## 12. Related
+## 11. Related
 
 - Clipboard History Manager & External Access — feature documentation (README, *Key Features* §16).
 - GitHub issue #17 — "Clipboard is always empty" (Samsung One UI & Vivo foreground sync, the
@@ -368,7 +345,7 @@ A small companion service could feed clips into a shared store that the provider
 
 ---
 
-## 13. Maintainer Notes
+## 12. Maintainer Notes
 
 The **Clipboard History** feature itself is complete and verified end-to-end on device: the
 in-app list, the inline thumbnails and the tap-to-open viewer hand-off, the content provider, the

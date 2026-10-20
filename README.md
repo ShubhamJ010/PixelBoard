@@ -340,14 +340,7 @@ If you modify any Smali or Kotlin patch code inside `pixelboard-patches/`:
 ```
 This recompiles the `.mpp` patch pack using Gradle and immediately applies it to the stock APK.
 
-### 3. Running Test Suite
-Verify patch bytecode transformations and contract integrity:
-```bash
-cd pixelboard-patches
-JAVA_HOME=/opt/homebrew/opt/openjdk@21 ./gradlew test
-```
-
-### 4. Manual CLI Usage (Requires Java 21)
+### 3. Manual CLI Usage (Requires Java 21)
 ```bash
 java -jar tools/patcher.jar patch \
   --patches=patches/PixelBoard.mpp \

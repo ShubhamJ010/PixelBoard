@@ -1,13 +1,14 @@
 <div align="center">
 
-# PixelBoard
+# PixelBoard (Clipboard History Edition)
 
-**Supercharged Gboard Mod featuring Google Pixel 11 series's Rambler Voice Typing, AI Writing Assistant & Writing Tools V2 [No Root].**
+**Supercharged Gboard Mod featuring an advanced Clipboard History Manager & Companion ContentProvider, Google Pixel 11 series Rambler Voice Typing, AI Writing Assistant & Writing Tools V2 [No Root].**
 
 <p>
-  <a href="https://github.com/Akshayykadam/PixelBoard/releases/tag/v18.4.1-Stable-V7">
-    <img src="https://img.shields.io/badge/Release-v18.4.1--V7-8A2BE2?style=flat-square&logo=github&logoColor=white" alt="Latest Release"/>
+  <a href="https://github.com/ShubhamJ010/PixelBoard/releases/tag/v18.4.1-Stable-V7-clipboard">
+    <img src="https://img.shields.io/badge/Release-v18.4.1--V7--clipboard-8A2BE2?style=flat-square&logo=github&logoColor=white" alt="Latest Release"/>
   </a>
+  <img src="https://img.shields.io/badge/Feature-Clipboard%20History%20Manager-blueviolet?style=flat-square&logo=googlekeep&logoColor=white" alt="Clipboard History"/>
   <img src="https://img.shields.io/badge/Android-10%20to%2016-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android Support"/>
   <img src="https://img.shields.io/badge/Architecture-arm64--v8a-blue?style=flat-square" alt="Arch Support"/>
   <img src="https://img.shields.io/badge/Base%20App-Gboard%20v18.4.1-orange?style=flat-square&logo=google" alt="Base Gboard"/>
@@ -17,38 +18,46 @@
 
 <!-- Primary Action: Clear download choices with zero confusion -->
 <p>
-  <a href="https://github.com/Akshayykadam/PixelBoard/releases/download/v18.4.1-Stable-V7/PixelBoard-18.4.1-V7.apk">
-    <img src="https://img.shields.io/badge/📥_Direct_Download_(APK)-v18.4.1_V7_(127_MB)-00C853?style=for-the-badge&logo=android&logoColor=white" height="42" alt="Download Ready-to-Install APK"/>
+  <a href="https://github.com/ShubhamJ010/PixelBoard/releases/download/v18.4.1-Stable-V7-clipboard/PixelBoard-clipboard-history-v18.4.1-V7.apk">
+    <img src="https://img.shields.io/badge/📥_Download_APK_(Clipboard_Edition)-v18.4.1_V7_(126_MB)-00C853?style=for-the-badge&logo=android&logoColor=white" height="42" alt="Download Ready-to-Install APK"/>
   </a>
   &nbsp;&nbsp;
-  <a href="https://github.com/Akshayykadam/PixelBoard/releases/download/v18.4.1-Stable-V7/patches-1.2.0.mpp">
-    <img src="https://img.shields.io/badge/📦_Morphe_Patch_(.mpp)-v1.2.0_(1.6_MB)-2979FF?style=for-the-badge&logo=android&logoColor=white" height="42" alt="Download Morphe Patch Bundle"/>
+  <a href="https://github.com/ShubhamJ010/PixelBoard/releases/download/v18.4.1-Stable-V7-clipboard/PixelBoard.mpp">
+    <img src="https://img.shields.io/badge/📦_Morphe_Patch_(.mpp)-v18.4.1_V7_(689_KB)-2979FF?style=for-the-badge&logo=android&logoColor=white" height="42" alt="Download Morphe Patch Bundle"/>
   </a>
 </p>
 
 <p>
-  <sub><b>First time?</b> Download the ready-to-install <b>APK</b> (no root needed, installs side-by-side). Use the <b>Morphe Patch</b> if patching manually.</sub>
+  <sub><b>First time?</b> Download the ready-to-install <b>APK</b> (no root needed, installs side-by-side with stock Gboard). Use the <b>Morphe Patch</b> if patching manually.</sub>
 </p>
 
 <p>
-  <a href="https://github.com/Akshayykadam/PixelBoard/releases/tag/v18.4.1-Stable-V7"> <b>Release Notes</b></a> &nbsp;&bull;&nbsp;
+  <a href="https://github.com/ShubhamJ010/PixelBoard/releases/tag/v18.4.1-Stable-V7-clipboard"> <b>Release Notes</b></a> &nbsp;&bull;&nbsp;
+  <a href="#-how-to-use-clipboard-history--external-access"> <b>Clipboard Guide</b></a> &nbsp;&bull;&nbsp;
   <a href="#installation-guide"> <b>Installation Guide</b></a> &nbsp;&bull;&nbsp;
   <a href="#visual-tour--screenshots"> <b>Screenshots</b></a> &nbsp;&bull;&nbsp;
-  <a href="https://github.com/Akshayykadam/PixelBoard/releases"> <b>All Releases</b></a>
+  <a href="https://github.com/ShubhamJ010/PixelBoard/releases"> <b>All Releases</b></a>
 </p>
 
 </div>
 
 ---
 
+> [!TIP]
+> **✨ Flagship Feature: Clipboard History Manager & Companion ContentProvider**
+> 
+> This fork supercharges PixelBoard with a full **Clipboard History Manager** and an opt-in **read-only ContentProvider**. It unlocks persistent clipboard history access straight from Gboard's internal SQLite database (`gboard_clipboard.db`), renders inline image thumbnail previews with instant viewer intent launching, offers secure token-based and signature-level authentication for external companion apps, and introduces a real-time live clipboard query endpoint.
+
+---
+
 <a id="release-assets"></a>
-## 📥 Release Assets (v18.4.1-V7 / Patch v1.2.0)
+## 📥 Release Assets (v18.4.1-V7 Clipboard Edition)
 
 | Package | Type | Description |
 | :--- | :--- | :--- |
-| [**PixelBoard-18.4.1-V7.apk**](https://github.com/Akshayykadam/PixelBoard/releases/download/v18.4.1-Stable-V7/PixelBoard-18.4.1-V7.apk) | **Signed APK** *(Recommended)* | **Ready to install.** Installs side-by-side with stock Gboard without root (`com.akshaykadam.pixelboard`). |
-| [**patches-1.2.0.mpp**](https://github.com/Akshayykadam/PixelBoard/releases/download/v18.4.1-Stable-V7/patches-1.2.0.mpp) | **Morphe Patch Bundle** | Standalone patch file for [Morphe Manager](#option-c-patch-via-morphe-manager-on-device-patcher) to patch your own base APK. |
-| [**Stock Gboard v18.4.1**](https://www.apkmirror.com/apk/google-inc/gboard/gboard-the-google-keyboard-18-4-1-985164140-release/) | **Base APK** |  Official unmodified base APK from APKMirror *(only required if patching manually with Morphe)*. |
+| [**PixelBoard-clipboard-history-v18.4.1-V7.apk**](https://github.com/ShubhamJ010/PixelBoard/releases/download/v18.4.1-Stable-V7-clipboard/PixelBoard-clipboard-history-v18.4.1-V7.apk) | **Signed APK** *(Recommended)* | **Ready to install.** Supercharged with Clipboard History Manager. Installs side-by-side with stock Gboard without root (`com.akshaykadam.pixelboard`). |
+| [**PixelBoard.mpp**](https://github.com/ShubhamJ010/PixelBoard/releases/download/v18.4.1-Stable-V7-clipboard/PixelBoard.mpp) | **Morphe Patch Bundle** | Standalone patch bundle containing clipboard history patches for [Morphe Manager](#option-c-patch-via-morphe-manager-on-device-patcher) to patch your own base APK. |
+| [**Stock Gboard v18.4.1**](https://www.apkmirror.com/apk/google-inc/gboard/gboard-the-google-keyboard-18-4-1-985164140-release/) | **Base APK** | Official unmodified base APK from APKMirror *(only required if patching manually with Morphe)*. |
 
 ---
 
@@ -62,13 +71,30 @@
 
 ## Overview
 
-**PixelBoard** is a sleek, ultra-clean enhancement of Google's flagship keyboard. Tailored for pure productivity, PixelBoard strips away unnecessary bloatware and focuses strictly on powerhouse capabilities: **Gemini Rambler Natural Voice Dictation**, **AI Writing Assistant**, **Modern Spell Checker Suggestion Chips & Grammar Checking**, **Scan Text Camera OCR**, **Screenshot Floating Suggestions**, **Material 3 Expressive Rounded Keys**, **Emoji Palette V2**, **Super Insert Quick Hub**, **Restored Emoji Size Slider & Vibrant Emojis**, **Samsung & Vivo Clipboard History Sync**, **Clipboard History Manager & External Access**, and **Automatic Zero-Restart Instant Activation**.
+**PixelBoard (Clipboard History Edition)** is a sleek, ultra-clean enhancement of Google's flagship keyboard. Tailored for pure productivity, PixelBoard strips away unnecessary bloatware and focuses strictly on powerhouse capabilities: **Built-in Clipboard History Manager & External Access ContentProvider**, **Gemini Rambler Natural Voice Dictation**, **AI Writing Assistant**, **Modern Spell Checker Suggestion Chips & Grammar Checking**, **Scan Text Camera OCR**, **Screenshot Floating Suggestions**, **Material 3 Expressive Rounded Keys**, **Emoji Palette V2**, **Super Insert Quick Hub**, **Restored Emoji Size Slider & Vibrant Emojis**, **Samsung & Vivo Clipboard History Sync**, and **Automatic Zero-Restart Instant Activation**.
 
 PixelBoard is engineered with an independent coexistence package ID (`com.akshaykadam.pixelboard`), allowing you to install and use it **side-by-side with your factory Gboard** without replacing, uninstalling, or risking system keyboard stability.
 
 ---
 
 ## Key Features
+
+### 🌟 Extra Feature: Clipboard History Manager & Companion ContentProvider
+PixelBoard surfaces the rich clipboard history captured by Gboard, provides a dedicated UI with media previews, and securely publishes it to other companion apps:
+- **Built-in History Screen**: A dedicated **Clipboard history** viewer in **★ Advanced settings** displaying captured text and media clips (newest first) straight from Gboard's native `gboard_clipboard.db` (`clips` table). Tap any text entry to copy it directly back to the active clipboard.
+- **Inline Image & Screenshot Previews**: Image clips and captured screenshots render with high-quality square thumbnail previews directly in the list. Tapping an image row launches Android's system **Open with** viewer for effortless inspection.
+- **Safe by Default & Sensitive Data Protection**: Clips captured from sensitive password fields (marked via `sensitive` column) are hidden by default unless **Include sensitive clips** is explicitly enabled.
+- **Opt-In External Access ContentProvider**: Companion and automation apps can query clipboard history programmatically via Android's ContentProvider architecture:
+  ```text
+  content://com.akshaykadam.pixelboard.gboard_clipboard_history/clips
+  ```
+- **Two Flexible Authentication Modes**: Supports signature-level permissions (`com.akshaykadam.pixelboard.permission.READ_CLIPBOARD_HISTORY`) for co-signed apps, or per-install **Access Token** query parameters (`?token=<ACCESS_TOKEN>`) configured from the settings screen.
+- **Real-Time Live Clipboard Endpoint**:
+  ```text
+  content://com.akshaykadam.pixelboard.gboard_clipboard_history/primary
+  ```
+  Returns the exact clip currently on the system clipboard even if copied while another keyboard was active.
+- **Read-Only Security Contract**: Insert, update, and delete calls are blocked to prevent external tampering with Gboard's internal database.
 
 ### 1. Gemini "Rambler" Natural Voice Typing
 Traditional voice-to-text transcribes every hesitation literally. PixelBoard unlocks Google's state-of-the-art **Rambler** model:
@@ -147,17 +173,6 @@ On supported devices (such as Google Pixel 8 Pro / 9 series), choose your prefer
 - **Custom Adaptive Icon**: Bundles PixelBoard's custom high-resolution Material You adaptive app icon for home launcher and settings.
 - **Signature Whitelist Bypass**: Pre-patched bytecode ensures Google Play signature checks and integrity verifications pass cleanly without root.
 - **Inline Autofill & Password Manager Suggestions**: Enables Android's `DeviceIntelligence` inline autofill chips for password managers (Bitwarden, 1Password, KeePass, etc.) in the renamed package ([#24](https://github.com/Akshayykadam/PixelBoard/pull/24)).
-
-### 16. Clipboard History Manager & External Access
-PixelBoard now surfaces the clipboard history that Gboard already captures, and can publish it to other apps:
-- **Built-in History Screen**: A new **Clipboard history** entry in **★ Advanced settings** lists the captured entries (newest first) straight from Gboard's own `gboard_clipboard.db` (`clips` table). Tap a text entry to copy it back to the clipboard.
-- **Inline Image Previews**: Image clips (screenshots and copied images) show a small square thumbnail in the list. Tap the row to open the image in your gallery or image viewer through the system **Open with** flow; the list keeps the timestamp as the row summary.
-- **Safe by Default**: Clips captured from password fields (the `sensitive` column) are hidden unless **Include sensitive clips** is explicitly enabled, and the history is only populated when Gboard's own clipboard history is turned on.
-- **Opt-In External Access**: A dedicated read-only content provider publishes the history to companion apps. It stays closed until **Allow external apps to read clipboard history** is switched on.
-- **Two Ways to Authenticate**: Callers can hold the `signature`-level permission `com.akshaykadam.pixelboard.permission.READ_CLIPBOARD_HISTORY` (same signing key as PixelBoard) or pass the per-install access token that can be copied from the settings screen.
-- **Read-Only Contract**: The provider exposes `content://com.akshaykadam.pixelboard.gboard_clipboard_history/clips` (and `/clips/{id}`) with the columns `_id`, `text`, `html_text`, `item_type`, `entity_type`, `timestamp`, `sensitive`, `uri`, `group_id`. Inserts, updates and deletes are rejected.
-- **Live Clipboard Endpoint**: `content://com.akshaykadam.pixelboard.gboard_clipboard_history/primary` returns the entry that is on the system clipboard right now, even when it was copied while another keyboard was active. It uses the same access control and the same sensitive policy as `/clips`.
-- **Capture Window**: Only copies made while PixelBoard was the active keyboard are recorded, because Android restricts clipboard access to the active keyboard. See [docs/issues/clipboard-capture-window.md](docs/issues/clipboard-capture-window.md).
 
 > [!NOTE]
 > **Google Pixel Device Requirement**: New advanced features (such as **Writing Tools V2** and the **On-Device AI Inference Backend Selector**) are available **only on Google Pixel devices** (e.g., Pixel 8 Pro / Pixel 9 series) due to system AICore and hardware model requirements. On non-Pixel Android devices, these specific options are automatically hidden or gated to ensure complete stability, while core features like **Gemini Rambler Natural Voice Typing**, **AI Proofread**, and **Tone Rewriting** work across all supported devices.
@@ -255,7 +270,7 @@ PixelBoard features a clean, minimal preference screen modeled directly after th
 ## Installation Guide
 
 ### Option A: Direct Download on Your Phone (Easiest)
-1. Download [**PixelBoard Stable APK (v18.4.1 V7, 127 MB)**](https://github.com/Akshayykadam/PixelBoard/releases/download/v18.4.1-Stable-V7/PixelBoard-18.4.1-V7.apk) (or view the [**v18.4.1-V7 Release Page**](https://github.com/Akshayykadam/PixelBoard/releases/tag/v18.4.1-Stable-V7)).
+1. Download [**PixelBoard Clipboard Edition APK (v18.4.1 V7, 126 MB)**](https://github.com/ShubhamJ010/PixelBoard/releases/download/v18.4.1-Stable-V7-clipboard/PixelBoard-clipboard-history-v18.4.1-V7.apk) (or view the [**v18.4.1-V7 Clipboard Release Page**](https://github.com/ShubhamJ010/PixelBoard/releases/tag/v18.4.1-Stable-V7-clipboard)).
 2. Tap the downloaded `.apk` in your notification drawer or Downloads folder.
 3. If prompted, toggle **"Allow from this source"** and tap **Install**.
 4. Enable PixelBoard in **Settings > System > Languages & input > On-screen keyboard**.
@@ -263,7 +278,7 @@ PixelBoard features a clean, minimal preference screen modeled directly after th
 ### Option B: Sideload via ADB (For Developers)
 Connect your Android phone via USB with USB Debugging enabled:
 ```bash
-adb install -r PixelBoard-18.4.1-V7.apk
+adb install -r PixelBoard-clipboard-history-v18.4.1-V7.apk
 adb shell am force-stop com.akshaykadam.pixelboard
 ```
 *(If building from source locally, use `adb install -r output/PixelBoard-18.4.1-V7.apk`)*
@@ -272,7 +287,7 @@ adb shell am force-stop com.akshaykadam.pixelboard
 You can patch your stock Gboard APK directly on your phone using **Morphe Manager**:
 1. Install **Morphe Manager** on your Android device.
 2. Get the two required files:
-   - **Patch Bundle**: [**PixelBoard.mpp**](https://github.com/Akshayykadam/PixelBoard/raw/main/patches/PixelBoard.mpp) (or versioned [**patches-1.2.0.mpp**](https://github.com/Akshayykadam/PixelBoard/releases/download/v18.4.1-Stable-V7/patches-1.2.0.mpp))
+   - **Patch Bundle**: [**PixelBoard.mpp**](https://github.com/ShubhamJ010/PixelBoard/releases/download/v18.4.1-Stable-V7-clipboard/PixelBoard.mpp)
    - **Stock Base APK**: Download the official base bundle from [**APKMirror (Gboard v18.4.1 Release)**](https://www.apkmirror.com/apk/google-inc/gboard/gboard-the-google-keyboard-18-4-1-985164140-release/).
 3. In Morphe Manager, select **Storage**, choose the stock Gboard APK, and load `PixelBoard.mpp` as the patch source.
 4. Tap **Patch** and then **Install**!

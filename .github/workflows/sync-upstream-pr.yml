@@ -80,16 +80,19 @@ jobs:
         run: |
           TAG="${{ steps.upstream.outputs.tag }}"
           BRANCH="${{ steps.upstream.outputs.branch }}"
+          cat << 'EOF' > /tmp/pr_body.md
+          ### Upstream Release Synchronization
+
+          Automated sync for upstream release **[$TAG](https://github.com/Akshayykadam/PixelBoard/releases/tag/$TAG)** into `feature/clipboard-history`.
+
+          #### Next Steps:
+          1. Review the diff and ensure there are no merge conflicts.
+          2. Once merged into `feature/clipboard-history`, the **Build & Publish Release** workflow will automatically compile the test suite, build the patch bundle (.mpp) and release APK, and publish release `$TAG-clipboard` on your fork.
+          EOF
           gh pr create \
             --base feature/clipboard-history \
             --head "$BRANCH" \
             --title "chore(upstream): sync upstream release $TAG" \
-            --body "### Upstream Release Synchronization
-
-Automated sync for upstream release **[$TAG](https://github.com/Akshayykadam/PixelBoard/releases/tag/$TAG)** into \`feature/clipboard-history\`.
-
-#### Next Steps:
-1. Review the diff and ensure there are no merge conflicts.
-2. Once merged into \`feature/clipboard-history\`, the **Build & Publish Release** workflow will automatically compile the test suite, build the patch bundle (.mpp) and release APK, and publish release \`$TAG-clipboard\` on your fork."
+            --body-file /tmp/pr_body.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -117,21 +117,22 @@ jobs:
             FILES="$FILES output/PixelBoard-clipboard-history.apk"
           fi
 
-          TITLE="PixelBoard Clipboard Edition ($UPSTREAM_TAG)"
-          BODY="## PixelBoard Clipboard Edition ($UPSTREAM_TAG)
+          cat << 'EOF' > /tmp/release_notes.md
+          ## PixelBoard Clipboard Edition ($UPSTREAM_TAG)
 
-Based on upstream **[$UPSTREAM_TAG](https://github.com/Akshayykadam/PixelBoard/releases/tag/$UPSTREAM_TAG)**.
+          Based on upstream **[$UPSTREAM_TAG](https://github.com/Akshayykadam/PixelBoard/releases/tag/$UPSTREAM_TAG)**.
 
-### Features Included:
-- **Clipboard History**: Integrated clipboard history manager directly in Advanced Settings.
-- **Image Previews**: Inline 52dp thumbnails for screenshots and copied images with viewer hand-off.
-- **Background Sync**: Back-fill clips copied under other keyboards on input view activation.
-- **Companion Provider**: Secure ContentProvider (\`content://com.akshaykadam.pixelboard.gboard_clipboard_history/clips\`) with token-based authentication and live \`/primary\` endpoint.
-- **Sensitive Protection**: Automatic filtering of sensitive clips (passwords)."
+          ### Features Included:
+          - **Clipboard History**: Integrated clipboard history manager directly in Advanced Settings.
+          - **Image Previews**: Inline 52dp thumbnails for screenshots and copied images with viewer hand-off.
+          - **Background Sync**: Back-fill clips copied under other keyboards on input view activation.
+          - **Companion Provider**: Secure ContentProvider (`content://com.akshaykadam.pixelboard.gboard_clipboard_history/clips`) with token-based authentication and live `/primary` endpoint.
+          - **Sensitive Protection**: Automatic filtering of sensitive clips (passwords).
+          EOF
 
           gh release create "$TAG" $FILES \
-            --title "$TITLE" \
-            --notes "$BODY" \
+            --title "PixelBoard Clipboard Edition ($UPSTREAM_TAG)" \
+            --notes-file /tmp/release_notes.md \
             --target feature/clipboard-history
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -14,6 +14,7 @@ import android.app.AlertDialog;
 import android.annotation.SuppressLint;
 import android.content.ActivityNotFoundException;
 import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -144,6 +145,7 @@ public final class GboardPatchesSettingsActivity extends Activity
             "https://github.com/Akshayykadam/PixelBoard";
     private static final String DOCUMENT_TYPE_FALLBACK = "text/plain";
     private static final String DOCUMENT_PICKER_FAILED = "Unable to open file picker.";
+    private static final String CLIPBOARD_WRITE_FAILED = "Unable to write to the clipboard.";
     private static final String DOCUMENT_WRITE_FAILED = "Failed to export file.";
     private static final String DOCUMENT_READ_FAILED = "Failed to import file.";
     private Palette palette;
@@ -1075,6 +1077,28 @@ public final class GboardPatchesSettingsActivity extends Activity
             return;
         }
         Toast.makeText(this, message == null ? "" : message, Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void copyTextToClipboard(String label, String text) {
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            runOnUiThread(() -> copyTextToClipboard(label, text));
+            return;
+        }
+        try {
+            ClipboardManager clipboardManager =
+                    (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+            if (clipboardManager == null) {
+                showMessage(CLIPBOARD_WRITE_FAILED);
+                return;
+            }
+            clipboardManager.setPrimaryClip(ClipData.newPlainText(
+                    label == null ? "" : label,
+                    text == null ? "" : text));
+        } catch (Throwable throwable) {
+            Log.w(TAG, "Failed to copy text to clipboard", throwable);
+            showMessage(CLIPBOARD_WRITE_FAILED);
+        }
     }
 
     @Override
@@ -2869,8 +2893,22 @@ public final class GboardPatchesSettingsActivity extends Activity
         }
     }
 
-    private GboardPatchesSettingsContract.Screen buildRootScreen() {
-        Context context = this;
+    private static GboardPatchesSettingsContract.Feature findClipboardHistoryFeature(
+            Context context) {
+        try {
+            for (GboardPatchesSettingsContract.Feature feature :
+                    GboardPatchesSettingsFeatureRegistry.features(context)) {
+                if (feature instanceof GboardClipboardHistoryFeature) {
+                    return feature;
+                }
+            }
+        } catch (Throwable throwable) {
+            Log.w(TAG, "Failed to resolve clipboard history feature", throwable);
+        }
+        return null;
+    }
+
+    private GboardPatchesSettingsContract.Screen buildRootScreen() {        Context context = this;
         SharedPreferences writingPrefs = GboardAiWritingToolsSettings.preferences(context);
         SharedPreferences voicePrefs = GboardAdvancedVoiceSettings.preferences(context);
         SharedPreferences patchesPrefs = GboardPatchesSettings.preferences(context);
@@ -2954,6 +2992,18 @@ public final class GboardPatchesSettingsActivity extends Activity
                         renderCurrentScreenSafely();
                     }
                 }));
+
+        GboardPatchesSettingsContract.Feature clipboardHistoryFeature =
+                findClipboardHistoryFeature(context);
+        if (clipboardHistoryFeature != null) {
+            rows.add(new GboardPatchesSettingsContract.NavigationRow(
+                    clipboardHistoryFeature.getEntryTitle(),
+                    clipboardHistoryFeature.getEntrySummary(),
+                    true,
+                    () -> GboardPatchesSettingsContract.openFeature(
+                            this,
+                            clipboardHistoryFeature)));
+        }
 
         List<GboardPatchesSettingsContract.Section> sections =
                 new ArrayList<GboardPatchesSettingsContract.Section>();

@@ -145,6 +145,10 @@ public final class GboardPatchesSettingsContract {
 
         default void showMessage(String message) {
         }
+
+        default void copyTextToClipboard(String label, String text) {
+            throw new UnsupportedOperationException("Clipboard write is unavailable");
+        }
     }
 
     public static void refresh(FeatureHost host) {
@@ -251,6 +255,10 @@ public final class GboardPatchesSettingsContract {
 
     public static void showMessage(FeatureHost host, String message) {
         submit(host, adapter -> adapter.showMessage(message));
+    }
+
+    public static void copyTextToClipboard(FeatureHost host, String label, String text) {
+        submit(host, adapter -> adapter.copyTextToClipboard(label, text));
     }
 
     private static void submit(FeatureHost host, Intent intent) {

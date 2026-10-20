@@ -807,4 +807,103 @@
         <translation locale="th">เปิดใช้รูปแบบปุ่มโค้งมน Material 3 Expressive (Belka)</translation>
         <translation locale="uk">Увімкнути закруглений стиль клавіш Material 3 Expressive (Belka).</translation>
     </string>
+    <string name="gboard_patches_clipboard_history_title">
+        <translation locale="en">Clipboard history</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_summary">
+        <translation locale="en">Browse, copy and export the Gboard clipboard history.</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_header_summary">
+        <translation locale="en">Entries captured by the keyboard, with optional export to companion apps.</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_error_title">
+        <translation locale="en">Clipboard history unavailable</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_error_summary">
+        <translation locale="en">The clipboard history database could not be read.</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_empty_title">
+        <translation locale="en">No clipboard entries yet</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_empty_summary">
+        <translation locale="en">Copy something on the device, then reopen this screen to see it here.</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_section_history">
+        <translation locale="en">Recent entries</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_section_export">
+        <translation locale="en">Export</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_section_external_access">
+        <translation locale="en">External access</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_section_danger">
+        <translation locale="en">Danger zone</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_entry_untitled">
+        <translation locale="en">(no text)</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_entry_unknown_time">
+        <translation locale="en">unknown time</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_copy_message">
+        <translation locale="en">Clipboard entry copied.</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_export_title">
+        <translation locale="en">Export clipboard history</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_export_summary">
+        <translation locale="en">Save the clipboard history to a text file.</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_export_file_name">
+        <translation locale="en">pixelboard-clipboard-history.txt</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_exported_message">
+        <translation locale="en">Clipboard history exported.</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_external_access_title">
+        <translation locale="en">Allow external apps to read clipboard history</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_external_access_summary">
+        <translation locale="en">Publishes the history through a content provider. Callers need the signature permission or the access token.</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_include_sensitive_title">
+        <translation locale="en">Include sensitive clips</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_include_sensitive_summary">
+        <translation locale="en">Include entries copied from password fields. Disabled by default.</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_access_token_title">
+        <translation locale="en">Access token</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_access_token_summary">
+        <translation locale="en">Copy the token that lets a companion app read the clipboard history.</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_access_token_value">
+        <translation locale="en">Token: %1$s</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_provider_value">
+        <translation locale="en">Provider: %1$s</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_regenerate_token_title">
+        <translation locale="en">Regenerate access token</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_regenerate_token_summary">
+        <translation locale="en">Invalidates the token that was shared before.</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_clear_title">
+        <translation locale="en">Clear clipboard history</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_clear_summary">
+        <translation locale="en">Delete every captured clipboard entry.</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_clear_confirm_title">
+        <translation locale="en">Clear clipboard history?</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_clear_confirm_message">
+        <translation locale="en">Every captured clipboard entry will be deleted. This cannot be undone.</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_cleared_message">
+        <translation locale="en">Clipboard history cleared.</translation>
+    </string>
 </settings-text>

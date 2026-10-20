@@ -62,7 +62,7 @@
 
 ## Overview
 
-**PixelBoard** is a sleek, ultra-clean enhancement of Google's flagship keyboard. Tailored for pure productivity, PixelBoard strips away unnecessary bloatware and focuses strictly on powerhouse capabilities: **Gemini Rambler Natural Voice Dictation**, **AI Writing Assistant**, **Modern Spell Checker Suggestion Chips & Grammar Checking**, **Scan Text Camera OCR**, **Screenshot Floating Suggestions**, **Material 3 Expressive Rounded Keys**, **Emoji Palette V2**, **Super Insert Quick Hub**, **Restored Emoji Size Slider & Vibrant Emojis**, **Samsung & Vivo Clipboard History Sync**, and **Automatic Zero-Restart Instant Activation**.
+**PixelBoard** is a sleek, ultra-clean enhancement of Google's flagship keyboard. Tailored for pure productivity, PixelBoard strips away unnecessary bloatware and focuses strictly on powerhouse capabilities: **Gemini Rambler Natural Voice Dictation**, **AI Writing Assistant**, **Modern Spell Checker Suggestion Chips & Grammar Checking**, **Scan Text Camera OCR**, **Screenshot Floating Suggestions**, **Material 3 Expressive Rounded Keys**, **Emoji Palette V2**, **Super Insert Quick Hub**, **Restored Emoji Size Slider & Vibrant Emojis**, **Samsung & Vivo Clipboard History Sync**, **Clipboard History Manager & External Export**, and **Automatic Zero-Restart Instant Activation**.
 
 PixelBoard is engineered with an independent coexistence package ID (`com.akshaykadam.pixelboard`), allowing you to install and use it **side-by-side with your factory Gboard** without replacing, uninstalling, or risking system keyboard stability.
 
@@ -148,6 +148,15 @@ On supported devices (such as Google Pixel 8 Pro / 9 series), choose your prefer
 - **Signature Whitelist Bypass**: Pre-patched bytecode ensures Google Play signature checks and integrity verifications pass cleanly without root.
 - **Inline Autofill & Password Manager Suggestions**: Enables Android's `DeviceIntelligence` inline autofill chips for password managers (Bitwarden, 1Password, KeePass, etc.) in the renamed package ([#24](https://github.com/Akshayykadam/PixelBoard/pull/24)).
 
+### 16. Clipboard History Manager & External Export
+PixelBoard now surfaces the clipboard history that Gboard already captures, and can publish it to other apps:
+- **Built-in History Screen**: A new **Clipboard history** entry in **★ Advanced settings** lists the captured entries (newest first) straight from Gboard's own `gboard_clipboard.db` (`clips` table). Tap any entry to copy it back to the clipboard.
+- **One-Tap Export**: Export the whole history to a text document with the system file picker, straight from the same screen.
+- **Safe by Default**: Clips captured from password fields (the `sensitive` column) are hidden unless **Include sensitive clips** is explicitly enabled, and the history is only populated when Gboard's own clipboard history is turned on.
+- **Opt-In External Access**: A dedicated read-only content provider publishes the history to companion apps. It stays closed until **Allow external apps to read clipboard history** is switched on.
+- **Two Ways to Authenticate**: Callers can hold the `signature`-level permission `com.akshaykadam.pixelboard.permission.READ_CLIPBOARD_HISTORY` (same signing key as PixelBoard) or pass the per-install access token that can be copied from the settings screen.
+- **Read-Only Contract**: The provider exposes `content://com.akshaykadam.pixelboard.gboard_clipboard_history/clips` (and `/clips/{id}`) with the columns `_id`, `text`, `html_text`, `item_type`, `entity_type`, `timestamp`, `sensitive`, `uri`, `group_id`. Inserts, updates and deletes are rejected.
+
 > [!NOTE]
 > **Google Pixel Device Requirement**: New advanced features (such as **Writing Tools V2** and the **On-Device AI Inference Backend Selector**) are available **only on Google Pixel devices** (e.g., Pixel 8 Pro / Pixel 9 series) due to system AICore and hardware model requirements. On non-Pixel Android devices, these specific options are automatically hidden or gated to ensure complete stability, while core features like **Gemini Rambler Natural Voice Typing**, **AI Proofread**, and **Tone Rewriting** work across all supported devices.
 
@@ -197,6 +206,31 @@ Google's **AI Writing Tools** allow you to proofread, rephrase, and adjust the t
 
 ---
 
+## 📋 How to Use Clipboard History & External Export
+
+### 1. Open the history screen
+- Open **★ Advanced settings** from the bottom of PixelBoard Settings.
+- Tap **Clipboard history**.
+- The screen lists the entries Gboard captured, newest first. Tap an entry to copy it back to the clipboard.
+
+### 2. Export the history
+- Under **Export**, tap **Export clipboard history** and pick a location with the system file picker.
+- A plain text file with every captured entry and its timestamp is written.
+
+### 3. Let another app read the history
+- Under **External access**, switch **Allow external apps to read clipboard history** **ON**.
+- Copy the **Access token** with the matching row (or regenerate it to invalidate a leaked token).
+- A companion app then queries:
+  ```text
+  content://com.akshaykadam.pixelboard.gboard_clipboard_history/clips
+  ```
+  and optionally appends `?token=<ACCESS_TOKEN>` when it is not signed with the same key as PixelBoard.
+
+> [!IMPORTANT]
+> Clipboard history can contain OTPs, addresses and other secrets. External access is **off by default**, sensitive clips (copied from password fields) are hidden unless you opt in, and the provider is read-only.
+
+---
+
 ## ⚙️ Advanced Settings Screen
 
 PixelBoard features a clean, minimal preference screen modeled directly after the native Material You Gboard UI:
@@ -205,6 +239,7 @@ PixelBoard features a clean, minimal preference screen modeled directly after th
 - **Support All Keyboards**: Extends AI writing assistance beyond English to all keyboard layouts.
 - **Inference Backend Type**: On supported hardware, select between `GBOARD_SERVER`, `PRIVATE_INFERENCE_AICORE`, and `PRIVATE_INFERENCE_ASTREA`.
 - **Enable Advanced Voice Typing**: Unlocks the *Rambler* dictation engine in Voice typing settings.
+- **Clipboard history**: Browse, copy, export and (opt-in) share the Gboard clipboard history with companion apps.
 - **Rounded Keys**: Enable Google's Material 3 Expressive Belka pill-shaped keycaps.
 - **Multilingual Support**: Fully localized in 20+ languages matching your device's system locale.
 - **Toolbar Restart Button (`↻`)**: Optional one-tap process reload utility in the toolbar if you ever want to force a refresh, though all settings and toggles apply automatically in real time without restarts.

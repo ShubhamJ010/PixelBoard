@@ -26,6 +26,7 @@ public final class GboardPatchesSettingsFeatureRegistry {
         List<GboardPatchesSettingsContract.Feature> features =
                 new ArrayList<GboardPatchesSettingsContract.Feature>();
         addIfAvailable(context, features, new GboardAiVoiceSettingsGroupFeature(context));
+        addIfAvailable(context, features, new GboardClipboardHistoryFeature(context));
         return Collections.unmodifiableList(features);
     }
 

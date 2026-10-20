@@ -15,6 +15,7 @@ import org.w3c.dom.Document
 import org.w3c.dom.Element
 
 import com.akshaykadam.pixelboard.patches.gboard.features.emoji.gboardCandidateEmojiVibrancyPatch
+import com.akshaykadam.pixelboard.patches.gboard.features.clipboard.gboardClipboardHistoryProviderPatch
 import com.akshaykadam.pixelboard.patches.gboard.features.clipboard.gboardClipboardSyncPatch
 import com.akshaykadam.pixelboard.patches.gboard.features.spellchecker.gboardSpellCheckerChipsPatch
 import com.akshaykadam.pixelboard.patches.gboard.features.accessibility.gboardFeaturesMenuAccessibilityPatch
@@ -28,6 +29,7 @@ internal val gboardPatchesSettingsPatch = resourcePatch(
         gboardPatchesExtensionCarrierPatch,
         gboardCandidateEmojiVibrancyPatch,
         gboardClipboardSyncPatch,
+        gboardClipboardHistoryProviderPatch,
         gboardSpellCheckerChipsPatch,
         gboardFeaturesMenuAccessibilityPatch,
     )

@@ -14,11 +14,14 @@ on:
 
 permissions:
   contents: write
+  packages: read
 
 jobs:
   test-and-release:
     name: Test, Build & Release
     runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -98,8 +101,6 @@ jobs:
           RELEASE_TAG="${UPSTREAM_TAG}-clipboard"
           echo "release_tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
           echo "upstream_tag=$UPSTREAM_TAG" >> $GITHUB_OUTPUT
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish GitHub Release
         run: |
@@ -134,5 +135,3 @@ jobs:
             --title "PixelBoard Clipboard Edition ($UPSTREAM_TAG)" \
             --notes-file /tmp/release_notes.md \
             --target feature/clipboard-history
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

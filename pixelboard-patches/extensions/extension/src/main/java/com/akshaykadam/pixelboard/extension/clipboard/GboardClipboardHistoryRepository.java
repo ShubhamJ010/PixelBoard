@@ -7,6 +7,7 @@
  */
 package com.akshaykadam.pixelboard.extension.clipboard;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -248,6 +249,176 @@ public final class GboardClipboardHistoryRepository {
         } finally {
             cursor.close();
         }
+    }
+
+    /**
+     * Writes a clipboard entry that Gboard did not capture itself.
+     *
+     * <p>This is used to back-fill clips that were copied while another keyboard was active. Only
+     * the columns that actually exist in the {@code clips} table are written, so the insert also
+     * works on Gboard builds that ship a reduced schema.
+     *
+     * @param context application context of the keyboard process.
+     * @param text the clip payload.
+     * @param timestamp the moment the clip was copied, in milliseconds since the epoch.
+     * @param sensitive whether the clip was copied from a password field.
+     * @return the identifier of the new row, or {@code -1} when the entry could not be stored.
+     */
+    public static long insertClip(Context context, String text, long timestamp,
+            boolean sensitive) {
+        if (context == null || text == null || text.isEmpty()) {
+            return -1L;
+        }
+        SQLiteDatabase database = null;
+        try {
+            database = openClipboardDatabase(context, true);
+            if (database == null) {
+                return -1L;
+            }
+            Set<String> availableColumns = resolveAvailableColumns(database);
+            return insertRow(database, availableColumns, text, timestamp, sensitive);
+        } catch (Throwable throwable) {
+            Log.w(TAG, "Failed to insert a clipboard entry", throwable);
+            return -1L;
+        } finally {
+            closeQuietly(database);
+        }
+    }
+
+    /**
+     * Writes a clipboard entry unless the same payload is already part of the recent history.
+     *
+     * <p>The duplicate check and the insert run on the same connection, so a clip that Gboard
+     * stored in the meantime is never written twice.
+     *
+     * @param context application context of the keyboard process.
+     * @param text the clip payload.
+     * @param timestamp the moment the clip was copied, in milliseconds since the epoch.
+     * @param sensitive whether the clip was copied from a password field.
+     * @param recentLimit number of recent rows that are inspected for the same payload.
+     * @return the identifier of the new row, {@code 0} when the payload is already stored, and
+     *     {@code -1} when the entry could not be written.
+     */
+    public static long insertClipIfAbsent(Context context, String text, long timestamp,
+            boolean sensitive, int recentLimit) {
+        if (context == null || text == null || text.isEmpty()) {
+            return -1L;
+        }
+        SQLiteDatabase database = null;
+        try {
+            database = openClipboardDatabase(context, true);
+            if (database == null) {
+                return -1L;
+            }
+            Set<String> availableColumns = resolveAvailableColumns(database);
+            if (!availableColumns.contains(COLUMN_TEXT)) {
+                return -1L;
+            }
+            if (containsRecentText(database, text, recentLimit)) {
+                return 0L;
+            }
+            return insertRow(database, availableColumns, text, timestamp, sensitive);
+        } catch (Throwable throwable) {
+            Log.w(TAG, "Failed to insert a clipboard entry", throwable);
+            return -1L;
+        } finally {
+            closeQuietly(database);
+        }
+    }
+
+    /**
+     * Returns {@code true} when one of the most recent rows already holds the given payload.
+     */
+    private static boolean containsRecentText(SQLiteDatabase database, String text, int limit) {
+        if (limit <= 0) {
+            return false;
+        }
+        Cursor cursor = null;
+        try {
+            cursor = database.query(TABLE_CLIPS, new String[]{COLUMN_TEXT}, null, null, null, null,
+                    COLUMN_TIMESTAMP + " DESC, " + COLUMN_ID + " DESC", String.valueOf(limit));
+            if (cursor == null) {
+                return false;
+            }
+            int textIndex = cursor.getColumnIndex(COLUMN_TEXT);
+            while (cursor.moveToNext()) {
+                if (textIndex < 0 || cursor.isNull(textIndex)) {
+                    continue;
+                }
+                if (text.equals(cursor.getString(textIndex))) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (Throwable throwable) {
+            Log.w(TAG, "Failed to inspect the recent clipboard entries", throwable);
+            return false;
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+    }
+
+    private static long insertRow(SQLiteDatabase database, Set<String> availableColumns,
+            String text, long timestamp, boolean sensitive) {
+        if (!availableColumns.contains(COLUMN_TEXT)) {
+            return -1L;
+        }
+        ContentValues values = new ContentValues();
+        if (availableColumns.contains(COLUMN_ID)) {
+            values.put(COLUMN_ID, resolveNextRowId(database, timestamp));
+        }
+        values.put(COLUMN_TEXT, text);
+        if (availableColumns.contains(COLUMN_HTML_TEXT)) {
+            values.putNull(COLUMN_HTML_TEXT);
+        }
+        if (availableColumns.contains(COLUMN_ITEM_TYPE)) {
+            values.put(COLUMN_ITEM_TYPE, 0);
+        }
+        if (availableColumns.contains(COLUMN_ENTITY_TYPE)) {
+            values.put(COLUMN_ENTITY_TYPE, 0);
+        }
+        if (availableColumns.contains(COLUMN_TIMESTAMP)) {
+            values.put(COLUMN_TIMESTAMP, timestamp);
+        }
+        if (availableColumns.contains(COLUMN_SENSITIVE)) {
+            values.put(COLUMN_SENSITIVE, sensitive ? 1 : 0);
+        }
+        if (availableColumns.contains(COLUMN_URI)) {
+            values.putNull(COLUMN_URI);
+        }
+        if (availableColumns.contains(COLUMN_GROUP_ID)) {
+            values.putNull(COLUMN_GROUP_ID);
+        }
+        return database.insertWithOnConflict(TABLE_CLIPS, null, values,
+                SQLiteDatabase.CONFLICT_REPLACE);
+    }
+
+    /**
+     * Resolves an unused row identifier. Gboard derives the identifier from the copy moment, so
+     * the timestamp is preferred and only increased when it would collide with an existing row.
+     */
+    private static long resolveNextRowId(SQLiteDatabase database, long timestamp) {
+        long candidate = timestamp > 0L ? timestamp : System.currentTimeMillis();
+        long highest = 0L;
+        Cursor cursor = null;
+        try {
+            cursor = database.rawQuery("SELECT MAX(" + COLUMN_ID + ") FROM " + TABLE_CLIPS, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                highest = cursor.getLong(0);
+            }
+        } catch (Throwable throwable) {
+            Log.d(TAG, "Failed to read the highest clipboard row id", throwable);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        if (candidate <= highest) {
+            candidate = highest + 1L;
+        }
+        return candidate;
     }
 
     /** Removes every clipboard entry. Returns {@code true} when the delete statement succeeded. */

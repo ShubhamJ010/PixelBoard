@@ -816,6 +816,9 @@
     <string name="gboard_patches_clipboard_history_header_summary">
         <translation locale="en">Entries captured by the keyboard, with optional export to companion apps.</translation>
     </string>
+    <string name="gboard_patches_clipboard_history_capture_window_summary">
+        <translation locale="en">Only copies made while PixelBoard is the active keyboard are recorded.</translation>
+    </string>
     <string name="gboard_patches_clipboard_history_error_title">
         <translation locale="en">Clipboard history unavailable</translation>
     </string>
@@ -826,7 +829,7 @@
         <translation locale="en">No clipboard entries yet</translation>
     </string>
     <string name="gboard_patches_clipboard_history_empty_summary">
-        <translation locale="en">Copy something on the device, then reopen this screen to see it here.</translation>
+        <translation locale="en">Copy something, then reopen this screen.</translation>
     </string>
     <string name="gboard_patches_clipboard_history_section_history">
         <translation locale="en">Recent entries</translation>
@@ -836,6 +839,9 @@
     </string>
     <string name="gboard_patches_clipboard_history_section_external_access">
         <translation locale="en">External access</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_section_external_access_description">
+        <translation locale="en">A read-only content provider lets companion apps read this history. It stays closed until the toggle below is on.</translation>
     </string>
     <string name="gboard_patches_clipboard_history_section_danger">
         <translation locale="en">Danger zone</translation>
@@ -865,7 +871,7 @@
         <translation locale="en">Allow external apps to read clipboard history</translation>
     </string>
     <string name="gboard_patches_clipboard_history_external_access_summary">
-        <translation locale="en">Publishes the history through a content provider. Callers need the signature permission or the access token.</translation>
+        <translation locale="en">Lets companion apps read this history through a content provider.</translation>
     </string>
     <string name="gboard_patches_clipboard_history_include_sensitive_title">
         <translation locale="en">Include sensitive clips</translation>
@@ -877,13 +883,28 @@
         <translation locale="en">Access token</translation>
     </string>
     <string name="gboard_patches_clipboard_history_access_token_summary">
-        <translation locale="en">Copy the token that lets a companion app read the clipboard history.</translation>
+        <translation locale="en">Copy it to paste into a companion app.</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_copy_token_title">
+        <translation locale="en">Copy token</translation>
     </string>
     <string name="gboard_patches_clipboard_history_access_token_value">
         <translation locale="en">Token: %1$s</translation>
     </string>
     <string name="gboard_patches_clipboard_history_provider_value">
-        <translation locale="en">Provider: %1$s</translation>
+        <translation locale="en">content://%1$s</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_provider_uri_title">
+        <translation locale="en">Provider URI</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_provider_endpoints_title">
+        <translation locale="en">Endpoints</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_provider_endpoints_value">
+        <translation locale="en">/clips · /clips/&#123;id&#125; · /primary</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_provider_permission_title">
+        <translation locale="en">Permission</translation>
     </string>
     <string name="gboard_patches_clipboard_history_regenerate_token_title">
         <translation locale="en">Regenerate access token</translation>

@@ -44,9 +44,11 @@ public final class GboardClipboardHistoryFeature
     private final String errorSummary;
     private final String emptyTitle;
     private final String emptySummary;
+    private final String captureWindowSummary;
     private final String sectionHistory;
     private final String sectionExport;
     private final String sectionExternalAccess;
+    private final String externalAccessDescription;
     private final String sectionDanger;
     private final String untitledEntry;
     private final String unknownTime;
@@ -61,8 +63,13 @@ public final class GboardClipboardHistoryFeature
     private final String includeSensitiveSummary;
     private final String accessTokenTitle;
     private final String accessTokenSummary;
+    private final String copyTokenTitle;
     private final int accessTokenValueResId;
     private final int providerValueResId;
+    private final int providerEndpointsValueResId;
+    private final String providerUriTitle;
+    private final String providerEndpointsTitle;
+    private final String providerPermissionTitle;
     private final String regenerateTokenTitle;
     private final String regenerateTokenSummary;
     private final String clearTitle;
@@ -87,12 +94,16 @@ public final class GboardClipboardHistoryFeature
                 R.string.gboard_patches_clipboard_history_empty_title);
         emptySummary = GboardSettingsText.get(context,
                 R.string.gboard_patches_clipboard_history_empty_summary);
+        captureWindowSummary = GboardSettingsText.get(context,
+                R.string.gboard_patches_clipboard_history_capture_window_summary);
         sectionHistory = GboardSettingsText.get(context,
                 R.string.gboard_patches_clipboard_history_section_history);
         sectionExport = GboardSettingsText.get(context,
                 R.string.gboard_patches_clipboard_history_section_export);
         sectionExternalAccess = GboardSettingsText.get(context,
                 R.string.gboard_patches_clipboard_history_section_external_access);
+        externalAccessDescription = GboardSettingsText.get(context,
+                R.string.gboard_patches_clipboard_history_section_external_access_description);
         sectionDanger = GboardSettingsText.get(context,
                 R.string.gboard_patches_clipboard_history_section_danger);
         untitledEntry = GboardSettingsText.get(context,
@@ -121,8 +132,18 @@ public final class GboardClipboardHistoryFeature
                 R.string.gboard_patches_clipboard_history_access_token_title);
         accessTokenSummary = GboardSettingsText.get(context,
                 R.string.gboard_patches_clipboard_history_access_token_summary);
+        copyTokenTitle = GboardSettingsText.get(context,
+                R.string.gboard_patches_clipboard_history_copy_token_title);
         accessTokenValueResId = R.string.gboard_patches_clipboard_history_access_token_value;
         providerValueResId = R.string.gboard_patches_clipboard_history_provider_value;
+        providerEndpointsValueResId =
+                R.string.gboard_patches_clipboard_history_provider_endpoints_value;
+        providerUriTitle = GboardSettingsText.get(context,
+                R.string.gboard_patches_clipboard_history_provider_uri_title);
+        providerEndpointsTitle = GboardSettingsText.get(context,
+                R.string.gboard_patches_clipboard_history_provider_endpoints_title);
+        providerPermissionTitle = GboardSettingsText.get(context,
+                R.string.gboard_patches_clipboard_history_provider_permission_title);
         regenerateTokenTitle = GboardSettingsText.get(context,
                 R.string.gboard_patches_clipboard_history_regenerate_token_title);
         regenerateTokenSummary = GboardSettingsText.get(context,
@@ -214,12 +235,12 @@ public final class GboardClipboardHistoryFeature
                     true,
                     true));
             externalAccessRows.add(new GboardPatchesSettingsContract.CommandRow(
-                    accessTokenTitle,
+                    copyTokenTitle,
                     accessTokenSummary,
                     true,
                     () -> {
                         GboardPatchesSettingsContract.copyTextToClipboard(
-                                host, accessTokenTitle, accessToken);
+                                host, copyTokenTitle, accessToken);
                         GboardPatchesSettingsContract.showMessage(host, copyMessage);
                     }));
             externalAccessRows.add(new GboardPatchesSettingsContract.CommandRow(
@@ -231,9 +252,19 @@ public final class GboardClipboardHistoryFeature
                         GboardPatchesSettingsContract.refresh(host);
                     }));
             externalAccessRows.add(new GboardPatchesSettingsContract.DetailRow(
-                    GboardClipboardHistorySettings.PERMISSION_READ_CLIPBOARD_HISTORY,
+                    providerUriTitle,
                     GboardSettingsText.format(context, providerValueResId,
                             GboardClipboardHistoryProvider.AUTHORITY),
+                    true,
+                    true));
+            externalAccessRows.add(new GboardPatchesSettingsContract.DetailRow(
+                    providerEndpointsTitle,
+                    GboardSettingsText.get(context, providerEndpointsValueResId),
+                    true,
+                    true));
+            externalAccessRows.add(new GboardPatchesSettingsContract.DetailRow(
+                    providerPermissionTitle,
+                    GboardClipboardHistorySettings.PERMISSION_READ_CLIPBOARD_HISTORY,
                     true,
                     true));
 
@@ -262,14 +293,18 @@ public final class GboardClipboardHistoryFeature
 
             List<GboardPatchesSettingsContract.Section> sections =
                     new ArrayList<GboardPatchesSettingsContract.Section>();
-            if (!historyRows.isEmpty()) {
-                sections.add(new GboardPatchesSettingsContract.Section(
-                        sectionHistory,
-                        historyRows));
-            }
+            // The capture window is a single line under the section title instead of a card, so it
+            // informs without competing with the entries.
+            sections.add(new GboardPatchesSettingsContract.Section(
+                    sectionHistory,
+                    captureWindowSummary,
+                    GboardPatchesSettingsContract.SectionStyle.DEFAULT,
+                    historyRows));
             sections.add(new GboardPatchesSettingsContract.Section(sectionExport, exportRows));
             sections.add(new GboardPatchesSettingsContract.Section(
                     sectionExternalAccess,
+                    externalAccessDescription,
+                    GboardPatchesSettingsContract.SectionStyle.DEFAULT,
                     externalAccessRows));
             sections.add(new GboardPatchesSettingsContract.Section(sectionDanger, dangerRows));
 

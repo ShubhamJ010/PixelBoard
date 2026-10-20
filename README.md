@@ -156,6 +156,8 @@ PixelBoard now surfaces the clipboard history that Gboard already captures, and 
 - **Opt-In External Access**: A dedicated read-only content provider publishes the history to companion apps. It stays closed until **Allow external apps to read clipboard history** is switched on.
 - **Two Ways to Authenticate**: Callers can hold the `signature`-level permission `com.akshaykadam.pixelboard.permission.READ_CLIPBOARD_HISTORY` (same signing key as PixelBoard) or pass the per-install access token that can be copied from the settings screen.
 - **Read-Only Contract**: The provider exposes `content://com.akshaykadam.pixelboard.gboard_clipboard_history/clips` (and `/clips/{id}`) with the columns `_id`, `text`, `html_text`, `item_type`, `entity_type`, `timestamp`, `sensitive`, `uri`, `group_id`. Inserts, updates and deletes are rejected.
+- **Live Clipboard Endpoint**: `content://com.akshaykadam.pixelboard.gboard_clipboard_history/primary` returns the entry that is on the system clipboard right now, even when it was copied while another keyboard was active. It uses the same access control and the same sensitive policy as `/clips`.
+- **Capture Window**: Only copies made while PixelBoard was the active keyboard are recorded, because Android restricts clipboard access to the active keyboard. See [docs/issues/clipboard-capture-window.md](docs/issues/clipboard-capture-window.md).
 
 > [!NOTE]
 > **Google Pixel Device Requirement**: New advanced features (such as **Writing Tools V2** and the **On-Device AI Inference Backend Selector**) are available **only on Google Pixel devices** (e.g., Pixel 8 Pro / Pixel 9 series) due to system AICore and hardware model requirements. On non-Pixel Android devices, these specific options are automatically hidden or gated to ensure complete stability, while core features like **Gemini Rambler Natural Voice Typing**, **AI Proofread**, and **Tone Rewriting** work across all supported devices.
@@ -212,6 +214,7 @@ Google's **AI Writing Tools** allow you to proofread, rephrase, and adjust the t
 - Open **★ Advanced settings** from the bottom of PixelBoard Settings.
 - Tap **Clipboard history**.
 - The screen lists the entries Gboard captured, newest first. Tap an entry to copy it back to the clipboard.
+- Only copies made while PixelBoard was the active keyboard are recorded, because Android restricts clipboard access to the active keyboard. A copy made under another keyboard is added the next time you return to PixelBoard.
 
 ### 2. Export the history
 - Under **Export**, tap **Export clipboard history** and pick a location with the system file picker.
@@ -225,6 +228,11 @@ Google's **AI Writing Tools** allow you to proofread, rephrase, and adjust the t
   content://com.akshaykadam.pixelboard.gboard_clipboard_history/clips
   ```
   and optionally appends `?token=<ACCESS_TOKEN>` when it is not signed with the same key as PixelBoard.
+- To read what is on the clipboard *right now* (including a clip copied while another keyboard was active), query:
+  ```text
+  content://com.akshaykadam.pixelboard.gboard_clipboard_history/primary
+  ```
+  The endpoint returns an empty cursor while another keyboard is the active one, because Android only lets the active keyboard read the clipboard.
 
 > [!IMPORTANT]
 > Clipboard history can contain OTPs, addresses and other secrets. External access is **off by default**, sensitive clips (copied from password fields) are hidden unless you opt in, and the provider is read-only.
@@ -309,6 +317,8 @@ GBoardMod/
 ├── tools/
 │   ├── patcher.jar            # Standalone patch compiler CLI (Java 21)
 │   └── patcher-data/          # Signing keystore & local storage
+├── docs/
+│   └── issues/                # Known issue analyses (e.g. clipboard capture window)
 ├── LICENSE                    # GNU General Public License v3.0
 └── pixelboard-patches/        # PixelBoard patch source repository (Kotlin/Smali)
     ├── gradle/

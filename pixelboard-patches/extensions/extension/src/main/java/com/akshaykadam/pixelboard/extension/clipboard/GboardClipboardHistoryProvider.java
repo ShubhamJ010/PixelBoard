@@ -7,6 +7,9 @@
  */
 package com.akshaykadam.pixelboard.extension.clipboard;
 
+import android.content.ClipData;
+import android.content.ClipDescription;
+import android.content.ClipboardManager;
 import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.content.Context;
@@ -32,7 +35,13 @@ import java.util.List;
  * <ul>
  *     <li>{@code content://com.akshaykadam.pixelboard.gboard_clipboard_history/clips}</li>
  *     <li>{@code content://com.akshaykadam.pixelboard.gboard_clipboard_history/clips/&#123;id&#125;}</li>
+ *     <li>{@code content://com.akshaykadam.pixelboard.gboard_clipboard_history/primary}</li>
  * </ul>
+ *
+ * <p>The {@code /primary} endpoint serves the entry that is on the system clipboard right now,
+ * which also covers clips that were copied while another keyboard was active. Android only exposes
+ * the primary clip to the focused application and to the current input method, so the endpoint
+ * returns an empty cursor while another keyboard owns the input.
  *
  * <p>Callers authenticate either with the signature level permission
  * {@code com.akshaykadam.pixelboard.permission.READ_CLIPBOARD_HISTORY} or with the per install
@@ -44,14 +53,17 @@ public final class GboardClipboardHistoryProvider extends ContentProvider {
     public static final String AUTHORITY =
             "com.akshaykadam.pixelboard.gboard_clipboard_history";
     public static final String PATH_CLIPS = "clips";
+    public static final String PATH_PRIMARY = "primary";
     public static final String QUERY_PARAM_TOKEN = "token";
 
     public static final String MIME_TYPE_CLIPS_DIR = "vnd.android.cursor.dir/clips";
     public static final String MIME_TYPE_CLIP_ITEM = "vnd.android.cursor.item/clips";
+    public static final String MIME_TYPE_PRIMARY = "vnd.android.cursor.item/primary";
 
     private static final String TAG = "PixelBoardClipboard";
     private static final int MATCH_CLIPS = 1;
     private static final int MATCH_CLIP_ITEM = 2;
+    private static final int MATCH_PRIMARY = 3;
 
     private UriMatcher matcher;
 
@@ -64,6 +76,7 @@ public final class GboardClipboardHistoryProvider extends ContentProvider {
         matcher = new UriMatcher(UriMatcher.NO_MATCH);
         matcher.addURI(AUTHORITY, PATH_CLIPS, MATCH_CLIPS);
         matcher.addURI(AUTHORITY, PATH_CLIPS + "/#", MATCH_CLIP_ITEM);
+        matcher.addURI(AUTHORITY, PATH_PRIMARY, MATCH_PRIMARY);
         return true;
     }
 
@@ -77,10 +90,13 @@ public final class GboardClipboardHistoryProvider extends ContentProvider {
         try {
             enforceAuthorizedCaller(context, uri);
             int match = matcher.match(uri);
-            if (match != MATCH_CLIPS && match != MATCH_CLIP_ITEM) {
+            if (match != MATCH_CLIPS && match != MATCH_CLIP_ITEM && match != MATCH_PRIMARY) {
                 return null;
             }
             boolean includeSensitive = GboardClipboardHistorySettings.isSensitiveIncluded(context);
+            if (match == MATCH_PRIMARY) {
+                return queryPrimaryClip(context, includeSensitive);
+            }
             List<GboardClipboardHistoryRepository.ClipboardEntry> entries =
                     GboardClipboardHistoryRepository.loadHistory(context, includeSensitive,
                             GboardClipboardHistoryRepository.MAX_LIMIT);
@@ -119,7 +135,56 @@ public final class GboardClipboardHistoryProvider extends ContentProvider {
         if (match == MATCH_CLIP_ITEM) {
             return MIME_TYPE_CLIP_ITEM;
         }
+        if (match == MATCH_PRIMARY) {
+            return MIME_TYPE_PRIMARY;
+        }
         return null;
+    }
+
+    /**
+     * Serves the entry that is on the system clipboard right now.
+     *
+     * <p>Android only exposes the primary clip to the focused application and to the current input
+     * method. While another keyboard owns the input the platform answers with an empty clip, so
+     * the endpoint returns an empty cursor instead of an error. Sensitive clips follow the same
+     * policy as the history endpoint and stay hidden unless the user opted in.
+     */
+    private Cursor queryPrimaryClip(Context context, boolean includeSensitive) {
+        MatrixCursor cursor = new MatrixCursor(GboardClipboardHistoryRepository.ALL_COLUMNS);
+        try {
+            ClipboardManager clipboardManager =
+                    (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+            if (clipboardManager == null) {
+                return cursor;
+            }
+            ClipData clip = clipboardManager.getPrimaryClip();
+            if (clip == null || clip.getItemCount() == 0) {
+                return cursor;
+            }
+            ClipDescription description = clip.getDescription();
+            boolean sensitive = GboardClipboardBackfill.isSensitive(description);
+            if (sensitive && !includeSensitive) {
+                return cursor;
+            }
+            CharSequence text = clip.getItemAt(0).coerceToText(context);
+            long timestamp = description != null && description.getTimestamp() > 0L
+                    ? description.getTimestamp()
+                    : System.currentTimeMillis();
+            cursor.addRow(new Object[] {
+                    0L,
+                    text == null ? null : text.toString(),
+                    null,
+                    0,
+                    0,
+                    timestamp,
+                    sensitive ? 1 : 0,
+                    null,
+                    null,
+            });
+        } catch (Throwable throwable) {
+            Log.w(TAG, "Failed to serve the primary clipboard entry", throwable);
+        }
+        return cursor;
     }
 
     @Override

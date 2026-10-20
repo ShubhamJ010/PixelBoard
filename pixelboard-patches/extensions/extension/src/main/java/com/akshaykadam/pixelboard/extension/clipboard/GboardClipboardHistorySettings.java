@@ -32,6 +32,7 @@ public final class GboardClipboardHistorySettings {
     static final String PREF_KEY_INCLUDE_SENSITIVE =
             "pref_clipboard_history_include_sensitive";
     static final String PREF_KEY_ACCESS_TOKEN = "pref_clipboard_history_access_token";
+    static final String PREF_KEY_BACKFILL_MARKER = "pref_clipboard_history_backfill_marker";
 
     private static final String TAG = "PixelBoardClipboard";
     private static final int ACCESS_TOKEN_BYTES = 16;
@@ -96,6 +97,32 @@ public final class GboardClipboardHistorySettings {
         String generated = generateAccessToken();
         preferences.edit().putString(PREF_KEY_ACCESS_TOKEN, generated).apply();
         return generated;
+    }
+
+    /**
+     * Returns the marker of the clip that was back-filled last. The marker is a hash of the clip
+     * content, so the clipboard payload itself never leaves the clipboard database.
+     */
+    public static String getBackfillMarker(Context context) {
+        SharedPreferences preferences = preferences(context);
+        if (preferences == null) {
+            return "";
+        }
+        String marker = preferences.getString(PREF_KEY_BACKFILL_MARKER, null);
+        return marker == null ? "" : marker;
+    }
+
+    /** Stores the marker of the clip that was back-filled last. */
+    public static void setBackfillMarker(Context context, String marker) {
+        SharedPreferences preferences = preferences(context);
+        if (preferences == null) {
+            return;
+        }
+        if (marker == null || marker.isEmpty()) {
+            preferences.edit().remove(PREF_KEY_BACKFILL_MARKER).apply();
+            return;
+        }
+        preferences.edit().putString(PREF_KEY_BACKFILL_MARKER, marker).apply();
     }
 
     /**

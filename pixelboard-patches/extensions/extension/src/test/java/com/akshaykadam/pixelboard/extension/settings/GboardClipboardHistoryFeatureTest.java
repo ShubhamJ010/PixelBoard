@@ -44,14 +44,14 @@ public class GboardClipboardHistoryFeatureTest {
         assertEquals(feature.getEntryTitle(), screen.getToolbarTitle());
 
         List<?> sections = reflectList(screen, "getSections");
-        assertEquals(3, sections.size());
+        assertEquals(4, sections.size());
 
-        List<?> externalAccessItems = reflectList(sections.get(1), "getItems");
+        List<?> externalAccessItems = reflectList(sections.get(2), "getItems");
         assertTrue(externalAccessItems.size() >= 5);
         assertEquals("ToggleRow", externalAccessItems.get(0).getClass().getSimpleName());
         assertEquals("ToggleRow", externalAccessItems.get(1).getClass().getSimpleName());
 
-        List<?> dangerItems = reflectList(sections.get(2), "getItems");
+        List<?> dangerItems = reflectList(sections.get(3), "getItems");
         assertEquals(1, dangerItems.size());
         assertEquals("DangerRow", dangerItems.get(0).getClass().getSimpleName());
     }
@@ -62,7 +62,7 @@ public class GboardClipboardHistoryFeatureTest {
                 feature.buildScreen(new GboardPatchesSettingsTestHost(context));
 
         List<?> sections = reflectList(screen, "getSections");
-        List<?> externalAccessItems = reflectList(sections.get(1), "getItems");
+        List<?> externalAccessItems = reflectList(sections.get(2), "getItems");
         Object toggle = externalAccessItems.get(0);
         assertFalse((Boolean) reflect(toggle, "isChecked"));
 
@@ -80,6 +80,19 @@ public class GboardClipboardHistoryFeatureTest {
 
         List<?> statusBlocks = reflectList(screen, "getStatusBlocks");
         assertEquals(1, statusBlocks.size());
+    }
+
+    @Test
+    public void captureWindowIsDisclosedAsTheHistorySectionDescription() throws Exception {
+        GboardPatchesSettingsContract.Screen screen =
+                feature.buildScreen(new GboardPatchesSettingsTestHost(context));
+
+        List<?> sections = reflectList(screen, "getSections");
+        Object historySection = sections.get(0);
+        String description = (String) reflect(historySection, "getDescription");
+        assertNotNull(description);
+        assertEquals("Only copies made while PixelBoard is the active keyboard are recorded.",
+                description);
     }
 
     private static Object reflect(Object target, String methodName) throws Exception {

@@ -82,7 +82,8 @@ public class GboardClipboardHistoryRepositoryTest {
                 GboardClipboardHistoryRepository.loadHistory(context, true, 1);
 
         assertEquals(1, entries.size());
-        assertEquals("newer", entries.get(0).getText());
+        // The rows are ordered by timestamp, so the sensitive entry is the newest one.
+        assertEquals("secret", entries.get(0).getText());
     }
 
     @Test
@@ -108,6 +109,86 @@ public class GboardClipboardHistoryRepositoryTest {
         assertEquals(1, entries.size());
         assertEquals("legacy", entries.get(0).getText());
         assertEquals(7L, entries.get(0).getId());
+    }
+
+    @Test
+    public void insertClipStoresANewRow() {
+        createClipboardDatabase();
+
+        long rowId = GboardClipboardHistoryRepository.insertClip(context, "backfilled", 5000L,
+                false);
+
+        assertTrue(rowId > 0L);
+        List<GboardClipboardHistoryRepository.ClipboardEntry> entries =
+                GboardClipboardHistoryRepository.loadHistory(context, true, 10);
+        assertEquals(4, entries.size());
+        assertEquals("backfilled", entries.get(0).getText());
+        assertEquals(5000L, entries.get(0).getTimestamp());
+        assertFalse(entries.get(0).isSensitive());
+    }
+
+    @Test
+    public void insertClipKeepsTheSensitiveFlag() {
+        createClipboardDatabase();
+
+        long rowId = GboardClipboardHistoryRepository.insertClip(context, "secret", 5000L, true);
+
+        assertTrue(rowId > 0L);
+        assertEquals(2, GboardClipboardHistoryRepository.loadHistory(context, false, 10).size());
+        List<GboardClipboardHistoryRepository.ClipboardEntry> all =
+                GboardClipboardHistoryRepository.loadHistory(context, true, 10);
+        assertEquals(4, all.size());
+        assertTrue(all.get(0).isSensitive());
+    }
+
+    @Test
+    public void insertClipIfAbsentSkipsAnAlreadyStoredPayload() {
+        createClipboardDatabase();
+
+        assertEquals(0L, GboardClipboardHistoryRepository.insertClipIfAbsent(
+                context, "newer", 5000L, false, 25));
+        assertEquals(3, GboardClipboardHistoryRepository.loadHistory(context, true, 10).size());
+    }
+
+    @Test
+    public void insertClipIfAbsentStoresAMissingPayload() {
+        createClipboardDatabase();
+
+        long rowId = GboardClipboardHistoryRepository.insertClipIfAbsent(
+                context, "brand new", 5000L, false, 25);
+
+        assertTrue(rowId > 0L);
+        List<GboardClipboardHistoryRepository.ClipboardEntry> entries =
+                GboardClipboardHistoryRepository.loadHistory(context, true, 10);
+        assertEquals(4, entries.size());
+        assertEquals("brand new", entries.get(0).getText());
+    }
+
+    @Test
+    public void insertClipRejectsEmptyPayloads() {
+        createClipboardDatabase();
+
+        assertEquals(-1L, GboardClipboardHistoryRepository.insertClip(context, null, 5000L, false));
+        assertEquals(-1L, GboardClipboardHistoryRepository.insertClip(context, "", 5000L, false));
+        assertEquals(-1L, GboardClipboardHistoryRepository.insertClip(null, "text", 5000L, false));
+        assertEquals(3, GboardClipboardHistoryRepository.loadHistory(context, true, 10).size());
+    }
+
+    @Test
+    public void insertClipWorksOnAReducedSchema() {
+        File file = context.getDatabasePath(GboardClipboardHistoryRepository.DATABASE_NAME);
+        SQLiteDatabase database = SQLiteDatabase.openOrCreateDatabase(file, null);
+        database.execSQL("CREATE TABLE IF NOT EXISTS clips (_id INTEGER PRIMARY KEY NOT NULL, "
+                + "text TEXT, timestamp INTEGER)");
+        database.close();
+
+        long rowId = GboardClipboardHistoryRepository.insertClip(context, "legacy", 1234L, false);
+
+        assertTrue(rowId > 0L);
+        List<GboardClipboardHistoryRepository.ClipboardEntry> entries =
+                GboardClipboardHistoryRepository.loadHistory(context, false, 10);
+        assertEquals(1, entries.size());
+        assertEquals("legacy", entries.get(0).getText());
     }
 
     private void createClipboardDatabase() {

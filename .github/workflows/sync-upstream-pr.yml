@@ -1,0 +1,95 @@
+name: Check Upstream & Open Sync PR
+
+on:
+  schedule:
+    # Runs every 4 hours to check for new upstream releases
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
+    inputs:
+      force_tag:
+        description: 'Force check/open PR for a specific upstream tag (e.g. v18.4.1-Stable-V7)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-and-pr:
+    name: Check Upstream Release & Open Sync PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Fork
+        uses: actions/checkout@v4
+        with:
+          ref: feature/clipboard-history
+          fetch-depth: 0
+
+      - name: Check Upstream Latest Release
+        id: upstream
+        run: |
+          if [ -n "${{ github.event.inputs.force_tag }}" ]; then
+            UPSTREAM_TAG="${{ github.event.inputs.force_tag }}"
+          else
+            UPSTREAM_TAG=$(gh release view -R Akshayykadam/PixelBoard --json tagName -q .tagName)
+          fi
+          echo "Latest upstream release tag: $UPSTREAM_TAG"
+          echo "tag=$UPSTREAM_TAG" >> $GITHUB_OUTPUT
+
+          OUR_TAG="${UPSTREAM_TAG}-clipboard"
+          echo "our_tag=$OUR_TAG" >> $GITHUB_OUTPUT
+
+          # Check if our fork already released this version
+          if gh release view "$OUR_TAG" >/dev/null 2>&1; then
+            echo "Release $OUR_TAG already exists on fork. No action needed."
+            echo "needed=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Check if an open PR for this tag already exists
+          BRANCH_NAME="sync/$UPSTREAM_TAG"
+          echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          PR_EXISTS=$(gh pr list --base feature/clipboard-history --head "$BRANCH_NAME" --state open --json number -q '.[0].number')
+          if [ -n "$PR_EXISTS" ]; then
+            echo "PR #$PR_EXISTS is already open for $BRANCH_NAME. Skipping."
+            echo "needed=false" >> $GITHUB_OUTPUT
+          else
+            echo "needed=true" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fetch Upstream Tag and Push Sync Branch
+        if: steps.upstream.outputs.needed == 'true'
+        run: |
+          TAG="${{ steps.upstream.outputs.tag }}"
+          BRANCH="${{ steps.upstream.outputs.branch }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Fetch upstream release tag
+          git fetch https://github.com/Akshayykadam/PixelBoard.git "refs/tags/$TAG:refs/tags/upstream-$TAG"
+
+          # Create a dedicated sync branch from the upstream tag
+          git checkout -b "$BRANCH" "upstream-$TAG"
+          git push -u origin "$BRANCH" --force
+
+      - name: Open Pull Request
+        if: steps.upstream.outputs.needed == 'true'
+        run: |
+          TAG="${{ steps.upstream.outputs.tag }}"
+          BRANCH="${{ steps.upstream.outputs.branch }}"
+          gh pr create \
+            --base feature/clipboard-history \
+            --head "$BRANCH" \
+            --title "chore(upstream): sync upstream release $TAG" \
+            --body "### Upstream Release Synchronization
+
+Automated sync for upstream release **[$TAG](https://github.com/Akshayykadam/PixelBoard/releases/tag/$TAG)** into \`feature/clipboard-history\`.
+
+#### Next Steps:
+1. Review the diff and ensure there are no merge conflicts.
+2. Once merged into \`feature/clipboard-history\`, the **Build & Publish Release** workflow will automatically compile the test suite, build the patch bundle (.mpp) and release APK, and publish release \`$TAG-clipboard\` on your fork."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

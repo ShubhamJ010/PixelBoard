@@ -10,6 +10,7 @@ import android.content.ClipDescription;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.PersistableBundle;
 
 import java.io.File;
@@ -102,6 +103,16 @@ public class GboardClipboardBackfillTest {
         assertTrue(visible.isEmpty());
         assertEquals(1, all.size());
         assertTrue(all.get(0).isSensitive());
+    }
+
+    @Test
+    public void imageClipsAreNotStoredAsUriText() {
+        Uri imageUri = Uri.parse("content://media/external/images/media/42");
+        clipboardManager.setPrimaryClip(new ClipData("Screenshot",
+                new String[]{"image/png"}, new ClipData.Item(imageUri)));
+
+        assertFalse(GboardClipboardBackfill.backfillPrimaryClip(context));
+        assertTrue(GboardClipboardHistoryRepository.loadHistory(context, true, 10).isEmpty());
     }
 
     @Test

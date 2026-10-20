@@ -24,9 +24,8 @@ import com.akshaykadam.pixelboard.extension.clipboard.GboardClipboardHistorySett
 /**
  * Settings screen that surfaces the Gboard clipboard history.
  *
- * <p>The screen lists the captured entries, allows copying a single entry back to the clipboard,
- * exports the whole history to a text document and controls whether other applications may read
- * the history through the exported content provider.
+ * <p>The screen lists the captured entries, allows copying a single entry back to the clipboard and
+ * controls whether other applications may read the history through the exported content provider.
  */
 public final class GboardClipboardHistoryFeature
         implements GboardPatchesSettingsContract.Feature {
@@ -35,6 +34,7 @@ public final class GboardClipboardHistoryFeature
     private static final int MAX_VISIBLE_ENTRIES = 25;
     private static final int PREVIEW_LENGTH = 72;
     private static final long REFRESH_INTERVAL_MS = 5000L;
+    private static final String IMAGE_MIME_TYPE = "image/*";
 
     private final String headerBadge;
     private final String entryTitle;
@@ -46,17 +46,13 @@ public final class GboardClipboardHistoryFeature
     private final String emptySummary;
     private final String captureWindowSummary;
     private final String sectionHistory;
-    private final String sectionExport;
     private final String sectionExternalAccess;
     private final String externalAccessDescription;
     private final String sectionDanger;
     private final String untitledEntry;
+    private final String imageEntry;
     private final String unknownTime;
     private final String copyMessage;
-    private final String exportTitle;
-    private final String exportSummary;
-    private final String exportFileName;
-    private final String exportedMessage;
     private final String externalAccessTitle;
     private final String externalAccessSummary;
     private final String includeSensitiveTitle;
@@ -98,8 +94,6 @@ public final class GboardClipboardHistoryFeature
                 R.string.gboard_patches_clipboard_history_capture_window_summary);
         sectionHistory = GboardSettingsText.get(context,
                 R.string.gboard_patches_clipboard_history_section_history);
-        sectionExport = GboardSettingsText.get(context,
-                R.string.gboard_patches_clipboard_history_section_export);
         sectionExternalAccess = GboardSettingsText.get(context,
                 R.string.gboard_patches_clipboard_history_section_external_access);
         externalAccessDescription = GboardSettingsText.get(context,
@@ -108,18 +102,12 @@ public final class GboardClipboardHistoryFeature
                 R.string.gboard_patches_clipboard_history_section_danger);
         untitledEntry = GboardSettingsText.get(context,
                 R.string.gboard_patches_clipboard_history_entry_untitled);
+        imageEntry = GboardSettingsText.get(context,
+                R.string.gboard_patches_clipboard_history_entry_image);
         unknownTime = GboardSettingsText.get(context,
                 R.string.gboard_patches_clipboard_history_entry_unknown_time);
         copyMessage = GboardSettingsText.get(context,
                 R.string.gboard_patches_clipboard_history_copy_message);
-        exportTitle = GboardSettingsText.get(context,
-                R.string.gboard_patches_clipboard_history_export_title);
-        exportSummary = GboardSettingsText.get(context,
-                R.string.gboard_patches_clipboard_history_export_summary);
-        exportFileName = GboardSettingsText.get(context,
-                R.string.gboard_patches_clipboard_history_export_file_name);
-        exportedMessage = GboardSettingsText.get(context,
-                R.string.gboard_patches_clipboard_history_exported_message);
         externalAccessTitle = GboardSettingsText.get(context,
                 R.string.gboard_patches_clipboard_history_external_access_title);
         externalAccessSummary = GboardSettingsText.get(context,
@@ -194,20 +182,14 @@ public final class GboardClipboardHistoryFeature
             List<GboardPatchesSettingsContract.Row> historyRows =
                     new ArrayList<GboardPatchesSettingsContract.Row>();
             for (GboardClipboardHistoryRepository.ClipboardEntry entry : entries) {
+                String thumbnailUri = isImageEntry(entry) ? entry.getUri() : null;
                 historyRows.add(new GboardPatchesSettingsContract.NavigationRow(
                         describeEntry(entry),
                         describeEntryTimestamp(entry),
                         true,
-                        () -> copyEntry(host, entry)));
+                        () -> activateEntry(host, entry),
+                        thumbnailUri));
             }
-
-            List<GboardPatchesSettingsContract.Row> exportRows =
-                    new ArrayList<GboardPatchesSettingsContract.Row>();
-            exportRows.add(new GboardPatchesSettingsContract.CommandRow(
-                    exportTitle,
-                    exportSummary,
-                    true,
-                    () -> exportHistory(host, context, includeSensitive)));
 
             List<GboardPatchesSettingsContract.Row> externalAccessRows =
                     new ArrayList<GboardPatchesSettingsContract.Row>();
@@ -300,7 +282,6 @@ public final class GboardClipboardHistoryFeature
                     captureWindowSummary,
                     GboardPatchesSettingsContract.SectionStyle.DEFAULT,
                     historyRows));
-            sections.add(new GboardPatchesSettingsContract.Section(sectionExport, exportRows));
             sections.add(new GboardPatchesSettingsContract.Section(
                     sectionExternalAccess,
                     externalAccessDescription,
@@ -339,6 +320,24 @@ public final class GboardClipboardHistoryFeature
                 Collections.emptyList());
     }
 
+    private void activateEntry(GboardPatchesSettingsContract.FeatureHost host,
+            GboardClipboardHistoryRepository.ClipboardEntry entry) {
+        if (isImageEntry(entry)) {
+            // Gboard stores the pixels of a copied image or screenshot in a file shared through the
+            // keyboard fileprovider, or in MediaStore for screenshots it captured. Handing that URI
+            // to the viewer with a read grant lets the user open the image instead of copying a text
+            // placeholder.
+            GboardPatchesSettingsContract.openContentUri(host, entry.getUri(), IMAGE_MIME_TYPE);
+            return;
+        }
+        copyEntry(host, entry);
+    }
+
+    /** True when the clip carries no text and stores its payload in the {@code uri} column. */
+    private boolean isImageEntry(GboardClipboardHistoryRepository.ClipboardEntry entry) {
+        return TextUtils.isEmpty(entry.getPasteableText()) && !TextUtils.isEmpty(entry.getUri());
+    }
+
     private void copyEntry(GboardPatchesSettingsContract.FeatureHost host,
             GboardClipboardHistoryRepository.ClipboardEntry entry) {
         String text = entry.getPasteableText();
@@ -349,26 +348,11 @@ public final class GboardClipboardHistoryFeature
         GboardPatchesSettingsContract.copyTextToClipboard(host, entryTitle, text);
         GboardPatchesSettingsContract.showMessage(host, copyMessage);
     }
-    private void exportHistory(GboardPatchesSettingsContract.FeatureHost host, Context context,
-            boolean includeSensitive) {
-        List<GboardClipboardHistoryRepository.ClipboardEntry> entries =
-                GboardClipboardHistoryRepository.loadHistory(context, includeSensitive,
-                        GboardClipboardHistoryRepository.MAX_LIMIT);
-        if (entries.isEmpty()) {
-            GboardPatchesSettingsContract.showMessage(host, emptyTitle);
-            return;
-        }
-        StringBuilder builder = new StringBuilder();
-        for (GboardClipboardHistoryRepository.ClipboardEntry entry : entries) {
-            builder.append(describeEntryTimestamp(entry)).append('\n');
-            builder.append(entry.getPasteableText()).append("\n\n");
-        }
-        GboardPatchesSettingsContract.createTextDocument(host, exportFileName, "text/plain",
-                builder.toString(),
-                () -> GboardPatchesSettingsContract.showMessage(host, exportedMessage));
-    }
 
     private String describeEntry(GboardClipboardHistoryRepository.ClipboardEntry entry) {
+        if (isImageEntry(entry)) {
+            return imageEntry;
+        }
         String text = entry.getPasteableText();
         if (TextUtils.isEmpty(text)) {
             return untitledEntry;

@@ -87,6 +87,24 @@ public class GboardClipboardHistoryRepositoryTest {
     }
 
     @Test
+    public void imageRowsKeepTheirUriAndHaveNoText() {
+        File file = context.getDatabasePath(GboardClipboardHistoryRepository.DATABASE_NAME);
+        SQLiteDatabase database = SQLiteDatabase.openOrCreateDatabase(file, null);
+        database.execSQL(CREATE_CLIPS);
+        database.execSQL("INSERT OR REPLACE INTO clips VALUES (9, NULL, NULL, 0, 0, 9000, 0,"
+                + " 'content://media/external/images/media/42', NULL)");
+        database.close();
+
+        List<GboardClipboardHistoryRepository.ClipboardEntry> entries =
+                GboardClipboardHistoryRepository.loadHistory(context, false, 10);
+
+        assertEquals(1, entries.size());
+        assertEquals("", entries.get(0).getPasteableText());
+        assertEquals("content://media/external/images/media/42",
+                entries.get(0).getUri());
+    }
+
+    @Test
     public void clearHistoryRemovesEveryEntry() {
         createClipboardDatabase();
 

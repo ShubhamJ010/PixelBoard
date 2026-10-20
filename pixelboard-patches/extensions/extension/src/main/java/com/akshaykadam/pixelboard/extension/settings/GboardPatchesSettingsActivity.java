@@ -55,6 +55,7 @@ import android.provider.Settings;
 import android.provider.OpenableColumns;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.LruCache;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -131,13 +132,14 @@ public final class GboardPatchesSettingsActivity extends Activity
     private static final long RESTART_ICON_ROTATION_DURATION_MS = 700L;
     private static final long RESTART_DELAY_MS = 500L;
     private static final long RESTART_CRASH_RECOVERY_RESTORE_DELAY_MS = 2000L;
-    private static final int REQUEST_CREATE_TEXT_DOCUMENT = 0x4742;
     private static final int REQUEST_OPEN_TEXT_DOCUMENT = 0x4743;
     private static final int REQUEST_OPEN_DOCUMENT_TREE = 0x4746;
     private static final int REQUEST_RUNTIME_PERMISSION = 0x4747;
     private static final int REQUEST_CREATE_BINARY_DOCUMENT = 0x4748;
     private static final int REQUEST_OPEN_BINARY_DOCUMENT = 0x4749;
     private static final int TOOLBAR_HEIGHT_DP = 56;
+    private static final int THUMBNAIL_SIZE_DP = 52;
+    private static final int THUMBNAIL_CACHE_ENTRIES = 48;
     private static final int NO_SCROLL_POSITION_REQUESTED = -1;
     private static final String TOOLBAR_TITLE_PATCHES = "Patches";
     private static final String ABOUT_AUTHOR_URL = "https://github.com/Akshayykadam";
@@ -190,7 +192,6 @@ public final class GboardPatchesSettingsActivity extends Activity
     private final Object screenBuildLock = new Object();
     private int requestedScrollYOnNextScreenApply = 0;
     private boolean initialFeatureFromIntentHandled;
-    private PendingTextDocumentWrite pendingTextDocumentWrite;
     private GboardPatchesSettingsContract.StringValueConsumer pendingTextDocumentReader;
     private PendingBinaryDocumentWrite pendingBinaryDocumentWrite;
     private GboardPatchesSettingsContract.BinaryDocumentConsumer pendingBinaryDocumentReader;
@@ -203,6 +204,8 @@ public final class GboardPatchesSettingsActivity extends Activity
     private SpeechRecognizer offlineSpeechRecognizer;
     private int offlineSpeechLanguageQueryGeneration;
     private Runnable offlineSpeechLanguageQueryTimeoutRunnable;
+    private final LruCache<String, Bitmap> thumbnailCache =
+            new LruCache<String, Bitmap>(THUMBNAIL_CACHE_ENTRIES);
 
     @Override
     protected void attachBaseContext(Context newBase) {
@@ -848,32 +851,6 @@ public final class GboardPatchesSettingsActivity extends Activity
 
     @Override
     @SuppressWarnings("deprecation")
-    public void createTextDocument(String fileName, String mimeType, String text,
-            Runnable completionAction) {
-        pendingTextDocumentWrite = new PendingTextDocumentWrite(
-                text != null ? text : "",
-                completionAction);
-        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-        intent.setType(normalizeMimeType(mimeType));
-        if (fileName != null && !fileName.trim().isEmpty()) {
-            intent.putExtra(Intent.EXTRA_TITLE, fileName.trim());
-        }
-        try {
-            startActivityForResult(intent, REQUEST_CREATE_TEXT_DOCUMENT);
-        } catch (ActivityNotFoundException ignored) {
-            pendingTextDocumentWrite = null;
-            Toast.makeText(this, DOCUMENT_PICKER_FAILED, Toast.LENGTH_SHORT).show();
-        } catch (Throwable throwable) {
-            pendingTextDocumentWrite = null;
-            Log.w(TAG, "Failed to launch document create picker", throwable);
-            Toast.makeText(this, DOCUMENT_PICKER_FAILED, Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    @Override
-    @SuppressWarnings("deprecation")
     public void openTextDocument(String[] mimeTypes,
             GboardPatchesSettingsContract.StringValueConsumer valueConsumer) {
         if (valueConsumer == null) {
@@ -1105,10 +1082,6 @@ public final class GboardPatchesSettingsActivity extends Activity
     @SuppressWarnings("deprecation")
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_CREATE_TEXT_DOCUMENT) {
-            handleCreateTextDocumentResult(resultCode, data);
-            return;
-        }
         if (requestCode == REQUEST_OPEN_TEXT_DOCUMENT) {
             handleOpenTextDocumentResult(resultCode, data);
             return;
@@ -1377,24 +1350,6 @@ public final class GboardPatchesSettingsActivity extends Activity
                 Gravity.CENTER));
     }
 
-    private void handleCreateTextDocumentResult(int resultCode, Intent data) {
-        PendingTextDocumentWrite pendingWrite = pendingTextDocumentWrite;
-        pendingTextDocumentWrite = null;
-        if (resultCode != RESULT_OK || data == null || data.getData() == null
-                || pendingWrite == null) {
-            return;
-        }
-        try {
-            writeTextDocument(data.getData(), pendingWrite.text);
-            if (pendingWrite.completionAction != null) {
-                pendingWrite.completionAction.run();
-            }
-        } catch (Throwable throwable) {
-            Log.w(TAG, "Failed to write selected document", throwable);
-            Toast.makeText(this, DOCUMENT_WRITE_FAILED, Toast.LENGTH_SHORT).show();
-        }
-    }
-
     private void handleOpenTextDocumentResult(int resultCode, Intent data) {
         GboardPatchesSettingsContract.StringValueConsumer reader = pendingTextDocumentReader;
         pendingTextDocumentReader = null;
@@ -1516,16 +1471,6 @@ public final class GboardPatchesSettingsActivity extends Activity
         } catch (Throwable throwable) {
             Log.w(TAG, "Failed to persist selected document tree", throwable);
             Toast.makeText(this, DOCUMENT_PICKER_FAILED, Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void writeTextDocument(Uri uri, String text) throws java.io.IOException {
-        try (OutputStream outputStream = getContentResolver().openOutputStream(uri, "wt")) {
-            if (outputStream == null) {
-                throw new java.io.IOException("Content resolver returned null output stream.");
-            }
-            outputStream.write((text != null ? text : "").getBytes(StandardCharsets.UTF_8));
-            outputStream.flush();
         }
     }
 
@@ -2054,6 +1999,20 @@ public final class GboardPatchesSettingsActivity extends Activity
             // Ignore devices without a visible browser handler.
         } catch (Throwable throwable) {
             Log.w(TAG, "Failed to open external URL: " + url, throwable);
+        }
+    }
+
+    @Override
+    public void openContentUri(String uri, String mimeType) {
+        if (uri == null || uri.isEmpty()) {
+            return;
+        }
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setDataAndType(Uri.parse(uri),
+                TextUtils.isEmpty(mimeType) ? "*/*" : mimeType);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        if (!tryStartActivity(intent)) {
+            showSafeToast(R.string.gboard_patches_clipboard_history_open_image_failed);
         }
     }
 
@@ -3337,6 +3296,10 @@ public final class GboardPatchesSettingsActivity extends Activity
 
     private View createNavigationRow(GboardPatchesSettingsContract.NavigationRow rowModel) {
         LinearLayout row = buildBaseRow();
+        View thumbnailView = buildRowThumbnail(rowModel.getThumbnailUri());
+        if (thumbnailView != null) {
+            row.addView(thumbnailView, thumbnailLayoutParams());
+        }
         LinearLayout textColumn = buildRowTextColumn(true);
         TextView titleView = buildRowTitle(rowModel.getTitle());
         TextView summaryView = buildRowSummary(rowModel.getSummary(), false);
@@ -4107,6 +4070,108 @@ public final class GboardPatchesSettingsActivity extends Activity
         return chevronView;
     }
 
+    /**
+     * Builds the small leading thumbnail of a row, or {@code null} when the row has no media.
+     *
+     * <p>The bitmap is decoded off the main thread and cached per URI so the periodic screen refresh
+     * does not re-decode the same clipboard image.
+     */
+    private View buildRowThumbnail(String thumbnailUri) {
+        if (TextUtils.isEmpty(thumbnailUri)) {
+            return null;
+        }
+        ImageView thumbnailView = new ImageView(this);
+        thumbnailView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        thumbnailView.setBackground(buildCardDrawable(
+                palette.surfaceAlt, palette.surfaceStroke, dp(10)));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            thumbnailView.setClipToOutline(true);
+        }
+        thumbnailView.setImageResource(android.R.drawable.ic_menu_gallery);
+        thumbnailView.setContentDescription(
+                text(R.string.gboard_patches_clipboard_history_entry_image));
+        bindThumbnail(thumbnailView, thumbnailUri);
+        return thumbnailView;
+    }
+
+    private LinearLayout.LayoutParams thumbnailLayoutParams() {
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                dp(THUMBNAIL_SIZE_DP), dp(THUMBNAIL_SIZE_DP));
+        params.rightMargin = dp(16);
+        params.gravity = Gravity.CENTER_VERTICAL;
+        return params;
+    }
+
+    private void bindThumbnail(final ImageView thumbnailView, final String thumbnailUri) {
+        Bitmap cached = thumbnailCache.get(thumbnailUri);
+        if (cached != null) {
+            thumbnailView.setImageBitmap(cached);
+            return;
+        }
+        thumbnailView.setTag(thumbnailUri);
+        try {
+            backgroundStateExecutor.execute(() -> {
+                final Bitmap bitmap = decodeThumbnail(thumbnailUri);
+                if (bitmap == null) {
+                    return;
+                }
+                thumbnailCache.put(thumbnailUri, bitmap);
+                runOnUiThread(() -> {
+                    if (thumbnailUri.equals(thumbnailView.getTag())) {
+                        thumbnailView.setImageBitmap(bitmap);
+                    }
+                });
+            });
+        } catch (RejectedExecutionException ignored) {
+            // Activity is already tearing down.
+        }
+    }
+
+    private Bitmap decodeThumbnail(String thumbnailUri) {
+        try {
+            Uri uri = Uri.parse(thumbnailUri);
+            int targetSize = dp(THUMBNAIL_SIZE_DP) * 2;
+            BitmapFactory.Options bounds = new BitmapFactory.Options();
+            bounds.inJustDecodeBounds = true;
+            try (InputStream inputStream = getContentResolver().openInputStream(uri)) {
+                if (inputStream == null) {
+                    return null;
+                }
+                BitmapFactory.decodeStream(inputStream, null, bounds);
+            }
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+                return null;
+            }
+            BitmapFactory.Options decodeOptions = new BitmapFactory.Options();
+            decodeOptions.inSampleSize = calculateInSampleSize(bounds, targetSize, targetSize);
+            try (InputStream inputStream = getContentResolver().openInputStream(uri)) {
+                if (inputStream == null) {
+                    return null;
+                }
+                return BitmapFactory.decodeStream(inputStream, null, decodeOptions);
+            }
+        } catch (Throwable throwable) {
+            Log.w(TAG, "Failed to load clipboard thumbnail: " + thumbnailUri, throwable);
+            return null;
+        }
+    }
+
+    private static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth,
+            int reqHeight) {
+        int height = options.outHeight;
+        int width = options.outWidth;
+        int inSampleSize = 1;
+        if (height > reqHeight || width > reqWidth) {
+            int halfHeight = height / 2;
+            int halfWidth = width / 2;
+            while (halfHeight / inSampleSize >= reqHeight
+                    && halfWidth / inSampleSize >= reqWidth) {
+                inSampleSize *= 2;
+            }
+        }
+        return inSampleSize;
+    }
+
     private View buildPreviewButton(GboardPatchesSettingsContract.Row rowModel) {
         GboardPatchesSettingsContract.PreviewSpec previewSpec = rowModel.getPreviewSpec();
         if (previewSpec == null) {
@@ -4322,16 +4387,6 @@ public final class GboardPatchesSettingsActivity extends Activity
 
     private int dp(float value) {
         return Math.round(value * getResources().getDisplayMetrics().density);
-    }
-
-    private static final class PendingTextDocumentWrite {
-        final String text;
-        final Runnable completionAction;
-
-        PendingTextDocumentWrite(String text, Runnable completionAction) {
-            this.text = text;
-            this.completionAction = completionAction;
-        }
     }
 
     private static final class PendingBinaryDocumentWrite {

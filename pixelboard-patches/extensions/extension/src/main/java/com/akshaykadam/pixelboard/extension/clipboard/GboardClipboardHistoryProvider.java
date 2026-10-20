@@ -7,9 +7,6 @@
  */
 package com.akshaykadam.pixelboard.extension.clipboard;
 
-import android.content.ClipData;
-import android.content.ClipDescription;
-import android.content.ClipboardManager;
 import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.content.Context;
@@ -148,37 +145,30 @@ public final class GboardClipboardHistoryProvider extends ContentProvider {
      * method. While another keyboard owns the input the platform answers with an empty clip, so
      * the endpoint returns an empty cursor instead of an error. Sensitive clips follow the same
      * policy as the history endpoint and stay hidden unless the user opted in.
+     *
+     * <p>Image clips (screenshots, copied images) keep an empty {@code text} column and expose the
+     * payload through {@code uri}, matching the rows of the history endpoint.
      */
     private Cursor queryPrimaryClip(Context context, boolean includeSensitive) {
         MatrixCursor cursor = new MatrixCursor(GboardClipboardHistoryRepository.ALL_COLUMNS);
         try {
-            ClipboardManager clipboardManager =
-                    (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-            if (clipboardManager == null) {
+            GboardClipboardBackfill.PrimaryClip primaryClip =
+                    GboardClipboardBackfill.readPrimaryClip(context);
+            if (primaryClip == null) {
                 return cursor;
             }
-            ClipData clip = clipboardManager.getPrimaryClip();
-            if (clip == null || clip.getItemCount() == 0) {
+            if (primaryClip.sensitive && !includeSensitive) {
                 return cursor;
             }
-            ClipDescription description = clip.getDescription();
-            boolean sensitive = GboardClipboardBackfill.isSensitive(description);
-            if (sensitive && !includeSensitive) {
-                return cursor;
-            }
-            CharSequence text = clip.getItemAt(0).coerceToText(context);
-            long timestamp = description != null && description.getTimestamp() > 0L
-                    ? description.getTimestamp()
-                    : System.currentTimeMillis();
             cursor.addRow(new Object[] {
                     0L,
-                    text == null ? null : text.toString(),
-                    null,
+                    primaryClip.text,
+                    primaryClip.htmlText,
                     0,
                     0,
-                    timestamp,
-                    sensitive ? 1 : 0,
-                    null,
+                    primaryClip.timestamp,
+                    primaryClip.sensitive ? 1 : 0,
+                    primaryClip.uri,
                     null,
             });
         } catch (Throwable throwable) {

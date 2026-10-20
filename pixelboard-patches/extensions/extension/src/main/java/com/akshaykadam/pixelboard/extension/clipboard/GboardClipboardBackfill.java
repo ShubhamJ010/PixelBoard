@@ -11,6 +11,7 @@ import android.content.ClipData;
 import android.content.ClipDescription;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.net.Uri;
 import android.util.Log;
 
 import java.nio.charset.StandardCharsets;
@@ -49,7 +50,101 @@ public final class GboardClipboardBackfill {
     }
 
     /**
+     * A snapshot of the primary clip that does not confuse an image payload with text.
+     *
+     * <p>{@link ClipData.Item#coerceToText(Context)} turns an image URI into the URI string, so it
+     * must only be used for clips that actually carry a text stream. Text entries keep
+     * {@link #text}/{@link #htmlText}; image entries keep {@link #uri} and leave the text columns
+     * empty, exactly like the rows Gboard writes for screenshots and copied images.
+     */
+    static final class PrimaryClip {
+        final String text;
+        final String htmlText;
+        final String uri;
+        final long timestamp;
+        final boolean sensitive;
+
+        PrimaryClip(String text, String htmlText, String uri, long timestamp, boolean sensitive) {
+            this.text = text;
+            this.htmlText = htmlText;
+            this.uri = uri;
+            this.timestamp = timestamp;
+            this.sensitive = sensitive;
+        }
+
+        boolean hasText() {
+            return text != null && text.length() > 0;
+        }
+    }
+
+    /**
+     * Reads the current primary clip without coercing image payloads into text.
+     *
+     * @param context context of the keyboard process.
+     * @return the snapshot, or {@code null} when the platform exposes no clip (empty clipboard or
+     *     another input method owns the input).
+     */
+    static PrimaryClip readPrimaryClip(Context context) {
+        if (context == null) {
+            return null;
+        }
+        Context applicationContext = context.getApplicationContext();
+        Context lookupContext = applicationContext != null ? applicationContext : context;
+        ClipboardManager clipboardManager =
+                (ClipboardManager) lookupContext.getSystemService(Context.CLIPBOARD_SERVICE);
+        if (clipboardManager == null) {
+            return null;
+        }
+        ClipData clip = clipboardManager.getPrimaryClip();
+        if (clip == null || clip.getItemCount() == 0) {
+            return null;
+        }
+        ClipData.Item item = clip.getItemAt(0);
+        ClipDescription description = clip.getDescription();
+
+        String text = null;
+        String htmlText = null;
+        String uri = null;
+        CharSequence itemText = item.getText();
+        if (itemText != null && itemText.length() > 0) {
+            text = itemText.toString();
+        }
+        String itemHtml = item.getHtmlText();
+        if (itemHtml != null && itemHtml.length() > 0) {
+            htmlText = itemHtml;
+        }
+
+        Uri itemUri = item.getUri();
+        if (text == null && htmlText == null && itemUri != null) {
+            if (isTextMimeType(description)) {
+                // A content URI that resolves to a text stream (for example shared text files).
+                CharSequence coerced = item.coerceToText(lookupContext);
+                if (coerced != null && coerced.length() > 0) {
+                    text = coerced.toString();
+                } else {
+                    uri = itemUri.toString();
+                }
+            } else {
+                // Image and other binary clips: keep the URI, never the URI string as text.
+                uri = itemUri.toString();
+            }
+        } else if (text == null && htmlText == null) {
+            CharSequence coerced = item.coerceToText(lookupContext);
+            if (coerced != null && coerced.length() > 0) {
+                text = coerced.toString();
+            }
+        }
+
+        return new PrimaryClip(text, htmlText, uri, resolveTimestamp(description),
+                isSensitive(description));
+    }
+
+    /**
      * Stores the current primary clip in the clipboard history when it is missing.
+     *
+     * <p>Non-textual clips such as screenshots and copied images are skipped on purpose. They are
+     * already stored by Gboard as image rows with a {@code uri} and no text, and writing the
+     * coerced URI string would create a second, wrongly classified text row.
      *
      * @param context context of the keyboard process.
      * @return {@code true} when a new row was written, {@code false} otherwise.
@@ -61,25 +156,17 @@ public final class GboardClipboardBackfill {
         Context applicationContext = context.getApplicationContext();
         Context lookupContext = applicationContext != null ? applicationContext : context;
         try {
-            ClipboardManager clipboardManager =
-                    (ClipboardManager) lookupContext.getSystemService(Context.CLIPBOARD_SERVICE);
-            if (clipboardManager == null) {
+            PrimaryClip primaryClip = readPrimaryClip(lookupContext);
+            if (primaryClip == null || !primaryClip.hasText()) {
+                // Nothing to back-fill. Image clips are handled by Gboard's own image capture.
                 return false;
             }
-            ClipData clip = clipboardManager.getPrimaryClip();
-            if (clip == null || clip.getItemCount() == 0) {
-                // Either the clipboard is empty or the platform denied the read because PixelBoard
-                // is not the current input method. Both cases mean "nothing to back-fill".
+            String clipText = primaryClip.text;
+            if (clipText.length() > MAX_TEXT_LENGTH) {
                 return false;
             }
-            CharSequence text = clip.getItemAt(0).coerceToText(lookupContext);
-            if (text == null || text.length() == 0 || text.length() > MAX_TEXT_LENGTH) {
-                return false;
-            }
-            String clipText = text.toString();
-            ClipDescription description = clip.getDescription();
-            long timestamp = resolveTimestamp(description);
-            boolean sensitive = isSensitive(description);
+            long timestamp = primaryClip.timestamp;
+            boolean sensitive = primaryClip.sensitive;
 
             String marker = buildMarker(clipText);
             if (marker.equals(GboardClipboardHistorySettings.getBackfillMarker(lookupContext))) {
@@ -128,10 +215,38 @@ public final class GboardClipboardBackfill {
     }
 
     private static long resolveTimestamp(ClipDescription description) {
-        if (description != null && description.getTimestamp() > 0L) {
-            return description.getTimestamp();
+        if (description != null) {
+            try {
+                if (description.getTimestamp() > 0L) {
+                    return description.getTimestamp();
+                }
+            } catch (Throwable throwable) {
+                // ClipDescription#getTimestamp is unavailable on older releases.
+                Log.d(TAG, "Failed to read the clipboard timestamp", throwable);
+            }
         }
         return System.currentTimeMillis();
+    }
+
+    /**
+     * Returns {@code true} when the clip description advertises a textual stream.
+     *
+     * <p>A missing MIME type is treated as non-textual. Screenshot and image clips do not always
+     * expose a type, and misclassifying them would store the URI as if it were clipboard text.
+     */
+    private static boolean isTextMimeType(ClipDescription description) {
+        if (description == null || description.getMimeTypeCount() == 0) {
+            return false;
+        }
+        try {
+            String mimeType = description.getMimeType(0);
+            // text/uri-list only names a reference. A screenshot exposed as a raw URI carries no
+            // text payload, so it must not be coerced into a text row.
+            return mimeType != null && mimeType.startsWith("text/")
+                    && !"text/uri-list".equals(mimeType);
+        } catch (Throwable throwable) {
+            return false;
+        }
     }
 
     /**

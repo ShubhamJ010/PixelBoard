@@ -120,6 +120,30 @@ public class GboardClipboardHistoryProviderTest {
     }
 
     @Test
+    public void providerServesAnImagePrimaryClipWithoutText() {
+        GboardClipboardHistorySettings.setExternalAccessEnabled(context, true);
+        ClipboardManager clipboardManager =
+                (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+        Uri imageUri = Uri.parse("content://media/external/images/media/42");
+        clipboardManager.setPrimaryClip(new ClipData("Screenshot",
+                new String[]{"image/png"}, new ClipData.Item(imageUri)));
+
+        Cursor cursor = provider.query(primaryUri(), null, null, null, null);
+
+        assertNotNull(cursor);
+        try {
+            assertEquals(1, cursor.getCount());
+            assertTrue(cursor.moveToFirst());
+            int textIndex = cursor.getColumnIndex(GboardClipboardHistoryRepository.COLUMN_TEXT);
+            assertTrue(cursor.isNull(textIndex));
+            assertEquals(imageUri.toString(), cursor.getString(
+                    cursor.getColumnIndex(GboardClipboardHistoryRepository.COLUMN_URI)));
+        } finally {
+            cursor.close();
+        }
+    }
+
+    @Test
     public void providerHidesASensitivePrimaryClipboardEntryByDefault() {
         createClipboardDatabase();
         GboardClipboardHistorySettings.setExternalAccessEnabled(context, true);

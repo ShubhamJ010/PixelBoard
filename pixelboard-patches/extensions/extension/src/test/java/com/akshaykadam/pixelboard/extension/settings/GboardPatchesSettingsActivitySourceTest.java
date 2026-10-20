@@ -213,6 +213,22 @@ public final class GboardPatchesSettingsActivitySourceTest {
                 "scrollState.resetForDirectPath(resolvedPath.size() - 1)"));
     }
 
+    @Test
+    public void clipboardRowsRenderInlineThumbnailsAndOpenContentUris() throws Exception {
+        String contractSource = readSource(
+                "src/main/java/com/akshaykadam/pixelboard/extension/settings/"
+                        + "GboardPatchesSettingsContract.java");
+        String activitySource = readSource(
+                "src/main/java/com/akshaykadam/pixelboard/extension/settings/"
+                        + "GboardPatchesSettingsActivity.java");
+
+        Assert.assertTrue(contractSource.contains("getThumbnailUri()"));
+        Assert.assertTrue(contractSource.contains("openContentUri("));
+        Assert.assertTrue(activitySource.contains("buildRowThumbnail("));
+        Assert.assertTrue(activitySource.contains("decodeThumbnail("));
+        Assert.assertTrue(activitySource.contains("FLAG_GRANT_READ_URI_PERMISSION"));
+    }
+
     private static String readSource(String path) throws Exception {
         return new String(Files.readAllBytes(Path.of(path)), StandardCharsets.UTF_8);
     }

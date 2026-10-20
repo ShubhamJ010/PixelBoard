@@ -811,10 +811,10 @@
         <translation locale="en">Clipboard history</translation>
     </string>
     <string name="gboard_patches_clipboard_history_summary">
-        <translation locale="en">Browse, copy and export the Gboard clipboard history.</translation>
+        <translation locale="en">Browse and copy the Gboard clipboard history.</translation>
     </string>
     <string name="gboard_patches_clipboard_history_header_summary">
-        <translation locale="en">Entries captured by the keyboard, with optional export to companion apps.</translation>
+        <translation locale="en">Entries captured by the keyboard, with optional read access for companion apps.</translation>
     </string>
     <string name="gboard_patches_clipboard_history_capture_window_summary">
         <translation locale="en">Only copies made while PixelBoard is the active keyboard are recorded.</translation>
@@ -834,9 +834,6 @@
     <string name="gboard_patches_clipboard_history_section_history">
         <translation locale="en">Recent entries</translation>
     </string>
-    <string name="gboard_patches_clipboard_history_section_export">
-        <translation locale="en">Export</translation>
-    </string>
     <string name="gboard_patches_clipboard_history_section_external_access">
         <translation locale="en">External access</translation>
     </string>
@@ -849,23 +846,17 @@
     <string name="gboard_patches_clipboard_history_entry_untitled">
         <translation locale="en">(no text)</translation>
     </string>
+    <string name="gboard_patches_clipboard_history_entry_image">
+        <translation locale="en">Image clip</translation>
+    </string>
     <string name="gboard_patches_clipboard_history_entry_unknown_time">
         <translation locale="en">unknown time</translation>
     </string>
     <string name="gboard_patches_clipboard_history_copy_message">
         <translation locale="en">Clipboard entry copied.</translation>
     </string>
-    <string name="gboard_patches_clipboard_history_export_title">
-        <translation locale="en">Export clipboard history</translation>
-    </string>
-    <string name="gboard_patches_clipboard_history_export_summary">
-        <translation locale="en">Save the clipboard history to a text file.</translation>
-    </string>
-    <string name="gboard_patches_clipboard_history_export_file_name">
-        <translation locale="en">pixelboard-clipboard-history.txt</translation>
-    </string>
-    <string name="gboard_patches_clipboard_history_exported_message">
-        <translation locale="en">Clipboard history exported.</translation>
+    <string name="gboard_patches_clipboard_history_open_image_failed">
+        <translation locale="en">No app can open this image.</translation>
     </string>
     <string name="gboard_patches_clipboard_history_external_access_title">
         <translation locale="en">Allow external apps to read clipboard history</translation>

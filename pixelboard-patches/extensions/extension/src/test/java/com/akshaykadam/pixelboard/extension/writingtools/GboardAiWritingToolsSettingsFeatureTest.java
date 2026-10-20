@@ -212,11 +212,6 @@ public final class GboardAiWritingToolsSettingsFeatureTest {
         }
 
         @Override
-        public void createTextDocument(String fileName, String mimeType, String text,
-                Runnable completionAction) {
-        }
-
-        @Override
         public void openTextDocument(String[] mimeTypes,
                 GboardPatchesSettingsContract.StringValueConsumer valueConsumer) {
         }

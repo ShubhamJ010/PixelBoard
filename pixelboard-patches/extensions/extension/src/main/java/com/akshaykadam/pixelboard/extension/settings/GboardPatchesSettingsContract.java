@@ -68,6 +68,16 @@ public final class GboardPatchesSettingsContract {
             throw new UnsupportedOperationException("External URL navigation is unavailable");
         }
 
+        /**
+         * Hands a content URI to the application that owns the matching MIME type.
+         *
+         * <p>Used by rows that carry binary media, such as a clipboard image clip, so a tap opens
+         * the image in the user's gallery or image viewer instead of copying text.
+         */
+        default void openContentUri(String uri, String mimeType) {
+            throw new UnsupportedOperationException("Content URI navigation is unavailable");
+        }
+
         default void openSpeechRecognitionAndSynthesisStoreListing() {
             throw new UnsupportedOperationException(
                     "Speech Recognition & Synthesis store navigation is unavailable");
@@ -101,9 +111,6 @@ public final class GboardPatchesSettingsContract {
         void showPreviewDialog(PreviewSpec previewSpec);
 
         void showManagedDialog(ManagedDialogAction action);
-
-        void createTextDocument(String fileName, String mimeType, String text,
-                Runnable completionAction);
 
         void openTextDocument(String[] mimeTypes, StringValueConsumer valueConsumer);
 
@@ -163,6 +170,10 @@ public final class GboardPatchesSettingsContract {
         submit(host, adapter -> adapter.openExternalUrl(url));
     }
 
+    public static void openContentUri(FeatureHost host, String uri, String mimeType) {
+        submit(host, adapter -> adapter.openContentUri(uri, mimeType));
+    }
+
     public static void openSpeechRecognitionAndSynthesisStoreListing(FeatureHost host) {
         submit(host, Host::openSpeechRecognitionAndSynthesisStoreListing);
     }
@@ -206,12 +217,6 @@ public final class GboardPatchesSettingsContract {
 
     public static void showManagedDialog(FeatureHost host, ManagedDialogAction action) {
         submit(host, adapter -> adapter.showManagedDialog(action));
-    }
-
-    public static void createTextDocument(FeatureHost host, String fileName, String mimeType,
-            String text, Runnable completionAction) {
-        submit(host, adapter ->
-                adapter.createTextDocument(fileName, mimeType, text, completionAction));
     }
 
     public static void openTextDocument(FeatureHost host, String[] mimeTypes,
@@ -705,22 +710,29 @@ public final class GboardPatchesSettingsContract {
         private final boolean enabled;
         private final PreviewSpec previewSpec;
         private final String badge;
+        private final String thumbnailUri;
 
         protected Row(CharSequence title, String summary, boolean enabled) {
-            this(title, summary, enabled, null, null);
+            this(title, summary, enabled, null, null, null);
         }
 
         protected Row(CharSequence title, String summary, boolean enabled, PreviewSpec previewSpec) {
-            this(title, summary, enabled, previewSpec, null);
+            this(title, summary, enabled, previewSpec, null, null);
         }
 
         protected Row(CharSequence title, String summary, boolean enabled, PreviewSpec previewSpec,
                 String badge) {
+            this(title, summary, enabled, previewSpec, badge, null);
+        }
+
+        protected Row(CharSequence title, String summary, boolean enabled, PreviewSpec previewSpec,
+                String badge, String thumbnailUri) {
             this.title = title;
             this.summary = summary;
             this.enabled = enabled;
             this.previewSpec = previewSpec;
             this.badge = badge;
+            this.thumbnailUri = thumbnailUri;
         }
 
         public CharSequence getTitle() {
@@ -742,6 +754,16 @@ public final class GboardPatchesSettingsContract {
         public String getBadge() {
             return badge;
         }
+
+        /**
+         * Content URI of a small leading thumbnail, or {@code null} when the row has no media.
+         *
+         * <p>The host decodes the URI into a compact square preview next to the title. Rows without
+         * a thumbnail keep their existing text-only layout.
+         */
+        public String getThumbnailUri() {
+            return thumbnailUri;
+        }
     }
 
     public static class NavigationRow extends Row {
@@ -750,28 +772,39 @@ public final class GboardPatchesSettingsContract {
         private final boolean showChevron;
 
         public NavigationRow(CharSequence title, String summary, boolean enabled, Runnable action) {
-            this(title, summary, null, enabled, action, null, true);
+            this(title, summary, null, enabled, action, null, true, null);
+        }
+
+        public NavigationRow(CharSequence title, String summary, boolean enabled, Runnable action,
+                String thumbnailUri) {
+            this(title, summary, null, enabled, action, null, true, thumbnailUri);
         }
 
         public NavigationRow(CharSequence title, String summary, String trailingText,
                 boolean enabled, Runnable action) {
-            this(title, summary, trailingText, enabled, action, null, true);
+            this(title, summary, trailingText, enabled, action, null, true, null);
         }
 
         public NavigationRow(CharSequence title, String summary, String trailingText,
                 boolean enabled, Runnable action, boolean showChevron) {
-            this(title, summary, trailingText, enabled, action, null, showChevron);
+            this(title, summary, trailingText, enabled, action, null, showChevron, null);
         }
 
         public NavigationRow(CharSequence title, String summary, String trailingText,
                 boolean enabled, Runnable action, PreviewSpec previewSpec) {
-            this(title, summary, trailingText, enabled, action, previewSpec, true);
+            this(title, summary, trailingText, enabled, action, previewSpec, true, null);
         }
 
         public NavigationRow(CharSequence title, String summary, String trailingText,
                 boolean enabled, Runnable action, PreviewSpec previewSpec,
                 boolean showChevron) {
-            super(title, summary, enabled, previewSpec);
+            this(title, summary, trailingText, enabled, action, previewSpec, showChevron, null);
+        }
+
+        public NavigationRow(CharSequence title, String summary, String trailingText,
+                boolean enabled, Runnable action, PreviewSpec previewSpec, boolean showChevron,
+                String thumbnailUri) {
+            super(title, summary, enabled, previewSpec, null, thumbnailUri);
             this.action = action;
             this.trailingText = trailingText;
             this.showChevron = showChevron;

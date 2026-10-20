@@ -5,7 +5,7 @@
 | **Document** | `docs/issues/clipboard-capture-window.md` |
 | **Type** | Known Issue / Limitation (platform-imposed) |
 | **Severity** | Medium — feature is functional, but clips captured outside the capture window need a manual trigger |
-| **Area** | Clipboard History Manager & External Export |
+| **Area** | Clipboard History Manager & External Access |
 | **Affected build** | PixelBoard v18.4.1-V7 (Patch Bundle v1.2.0) and earlier |
 | **Base APK** | Gboard `18.4.1.985164140-release-arm64-v8a` |
 | **Android** | Android 14 (API 34), arm64-v8a (tested on OnePlus 8T) |
@@ -263,7 +263,16 @@ Known trade-offs:
   hidden unless **Include sensitive clips** is enabled;
 - the entry is written through a second connection to Gboard's database. If Gboard holds a write
   lock at that moment the insert is skipped and the clip is recovered on the next input view
-  start.
+  start;
+- only text clips are back-filled. Image clips (screenshots, copied images) have no text payload
+  and are stored by Gboard with a `uri` column, so coercing them would create a second text row
+  containing the raw URI. Back-fill skips them; Gboard's own image row is labelled `Image clip` in
+  the history list instead.
+- image clips are surfaced in the history list with that `uri` as a small leading thumbnail. The
+  URI is either Gboard's keyboard `fileprovider` share of `files/clipboard_image` or a MediaStore
+  entry (`content://media/external/images/media/<id>`), so the same process can read it through the
+  `ContentResolver` and can hand it to `ACTION_VIEW` with `FLAG_GRANT_READ_URI_PERMISSION` to open
+  the image in the user's gallery or viewer.
 
 ### 8.3 Option C — Live primary-clip endpoint (shipped)
 
@@ -346,7 +355,7 @@ A small companion service could feed clips into a shared store that the provider
 
 ## 12. Related
 
-- Clipboard History Manager & External Export — feature documentation (README, *Key Features* §16).
+- Clipboard History Manager & External Access — feature documentation (README, *Key Features* §16).
 - GitHub issue #17 — "Clipboard is always empty" (Samsung One UI & Vivo foreground sync, the
   origin of `GboardClipboardSyncPatch` and `GboardClipboardSyncRuntime`).
 - `GboardClipboardSyncPatch` — the `onStartInputView` hook that drives the sync and the
@@ -362,10 +371,10 @@ A small companion service could feed clips into a shared store that the provider
 ## 13. Maintainer Notes
 
 The **Clipboard History** feature itself is complete and verified end-to-end on device: the
-in-app list, the SAF export, the content provider, the token / signature-permission access
-control and the read-only contract all behave as designed. The only open item is the *upstream
-capture window* documented above, which is bounded by the Android clipboard access restriction
-rather than by the implementation.
+in-app list, the inline thumbnails and the tap-to-open viewer hand-off, the content provider, the
+token / signature-permission access control and the read-only contract all behave as designed. The
+only open item is the *upstream capture window* documented above, which is bounded by the Android
+clipboard access restriction rather than by the implementation.
 
 Option A removes the "silent data loss" perception, Option B recovers the most recent clip that was
 copied under a foreign IME, and Option C answers "what is on the clipboard right now" for

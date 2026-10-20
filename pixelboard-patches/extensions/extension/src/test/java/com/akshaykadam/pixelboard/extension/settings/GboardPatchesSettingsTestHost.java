@@ -9,6 +9,8 @@ public class GboardPatchesSettingsTestHost implements GboardPatchesSettingsContr
     private GboardPatchesSettingsContract.Feature openedFeature;
     private GboardPatchesSettingsContract.ManagedDialogAction managedDialogAction;
     private int managedDialogDismissCount;
+    private String openedContentUri;
+    private String openedContentMimeType;
 
     public GboardPatchesSettingsTestHost() {
         this(null);
@@ -62,6 +64,20 @@ public class GboardPatchesSettingsTestHost implements GboardPatchesSettingsContr
     }
 
     @Override
+    public void openContentUri(String uri, String mimeType) {
+        openedContentUri = uri;
+        openedContentMimeType = mimeType;
+    }
+
+    public String getOpenedContentUri() {
+        return openedContentUri;
+    }
+
+    public String getOpenedContentMimeType() {
+        return openedContentMimeType;
+    }
+
+    @Override
     public void showChoiceDialog(String title, String[] labels, String[] values,
             String currentValue, String customValue, Runnable customAction,
             GboardPatchesSettingsContract.StringValueConsumer valueConsumer) {
@@ -79,11 +95,6 @@ public class GboardPatchesSettingsTestHost implements GboardPatchesSettingsContr
 
     @Override
     public void showPreviewDialog(GboardPatchesSettingsContract.PreviewSpec previewSpec) {
-    }
-
-    @Override
-    public void createTextDocument(String fileName, String mimeType, String text,
-            Runnable completionAction) {
     }
 
     @Override

@@ -3180,6 +3180,9 @@ public final class GboardPatchesSettingsActivity extends Activity
         if (row instanceof GboardPatchesSettingsContract.RadioRow radioRow) {
             return createRadioRow(radioRow);
         }
+        if (row instanceof GboardPatchesSettingsContract.CopyRow copyRow) {
+            return createCopyRow(copyRow);
+        }
         if (row instanceof GboardPatchesSettingsContract.DetailRow detailRow) {
             return createDetailRow(detailRow);
         }
@@ -3528,6 +3531,46 @@ public final class GboardPatchesSettingsActivity extends Activity
         return row;
     }
 
+    private View createCopyRow(GboardPatchesSettingsContract.CopyRow rowModel) {
+        LinearLayout row = buildDetailRowContainer();
+        row.setBackground(buildRippleDrawable(0));
+        TextView titleView = buildRowTitle(rowModel.getTitle());
+        TextView summaryView = buildRowSummary(rowModel.getSummary(), rowModel.isMonospace());
+        row.addView(titleView);
+        row.addView(summaryView);
+        TextView hintView = buildCopyHint(rowModel.getHint());
+        if (hintView != null) {
+            row.addView(hintView);
+        }
+        bindActionRowState(row, titleView, summaryView, null, rowModel.isEnabled());
+        if (hintView != null) {
+            hintView.setAlpha(rowModel.isEnabled() ? 1f : 0.92f);
+        }
+        row.setOnClickListener(view -> {
+            if (row.isEnabled()) {
+                runSafely("handle copy row", rowModel.getAction());
+            }
+        });
+        return row;
+    }
+
+    private TextView buildCopyHint(String hint) {
+        if (TextUtils.isEmpty(hint)) {
+            return null;
+        }
+        TextView hintView = new TextView(this);
+        hintView.setTextColor(palette.accent);
+        hintView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f);
+        hintView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.topMargin = dp(6);
+        hintView.setLayoutParams(params);
+        hintView.setText(hint);
+        return hintView;
+    }
+
     private View createCommandRow(GboardPatchesSettingsContract.CommandRow rowModel) {
         LinearLayout row = buildBaseRow();
         LinearLayout textColumn = buildRowTextColumn(true);
@@ -3568,6 +3611,16 @@ public final class GboardPatchesSettingsActivity extends Activity
                 toneBackground(block.getTone()),
                 palette.surfaceStroke,
                 dp(20)));
+        // The status card is inset like every other card on the screen. Without the margins the
+        // background bleeds into the screen edges and the rounded corners look cut off.
+        LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        cardParams.leftMargin = dp(16);
+        cardParams.rightMargin = dp(16);
+        cardParams.topMargin = dp(4);
+        cardParams.bottomMargin = dp(12);
+        card.setLayoutParams(cardParams);
         card.addView(buildSectionTitle(block.getTitle()));
         card.addView(buildSectionSummary(block.getSummary(), false));
         return card;

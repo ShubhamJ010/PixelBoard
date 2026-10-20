@@ -40,6 +40,8 @@ public class GboardClipboardHistoryFeatureTest {
 
     @Test
     public void screenExposesHistoryExternalAccessAndDangerSections() throws Exception {
+        createClipsTableAndInsert(3, "hello", null, 3000L);
+
         GboardPatchesSettingsContract.Screen screen =
                 feature.buildScreen(new GboardPatchesSettingsTestHost(context));
 
@@ -61,6 +63,8 @@ public class GboardClipboardHistoryFeatureTest {
 
     @Test
     public void externalAccessTogglePersistsThePreference() throws Exception {
+        createClipsTableAndInsert(4, "hello", null, 4000L);
+
         GboardPatchesSettingsContract.Screen screen =
                 feature.buildScreen(new GboardPatchesSettingsTestHost(context));
 
@@ -77,12 +81,81 @@ public class GboardClipboardHistoryFeatureTest {
     }
 
     @Test
-    public void emptyHistoryShowsAnEmptyStateStatusBlock() throws Exception {
+    public void emptyHistoryShowsAnEmptyStateWithoutAnEmptySection() throws Exception {
         GboardPatchesSettingsContract.Screen screen =
                 feature.buildScreen(new GboardPatchesSettingsTestHost(context));
 
         List<?> statusBlocks = reflectList(screen, "getStatusBlocks");
         assertEquals(1, statusBlocks.size());
+        assertEquals("Clipboard is empty", reflect(statusBlocks.get(0), "getTitle"));
+
+        // The empty state carries the guidance, so the history section is not rendered at all.
+        List<?> sections = reflectList(screen, "getSections");
+        assertEquals(2, sections.size());
+    }
+
+    @Test
+    public void accessTokenIsCopiedOnTap() throws Exception {
+        createClipsTableAndInsert(5, "hello", null, 5000L);
+
+        GboardPatchesSettingsTestHost host = new GboardPatchesSettingsTestHost(context);
+        GboardPatchesSettingsContract.Screen screen = feature.buildScreen(host);
+
+        Object tokenRow = externalAccessRow(screen, "Access token");
+        assertEquals("CopyRow", tokenRow.getClass().getSimpleName());
+
+        ((Runnable) reflect(tokenRow, "getAction")).run();
+
+        String token = com.akshaykadam.pixelboard.extension.clipboard
+                .GboardClipboardHistorySettings.getAccessToken(context);
+        assertEquals(token, host.getCopiedText());
+    }
+
+    @Test
+    public void providerUriIsCopiedOnTap() throws Exception {
+        createClipsTableAndInsert(6, "hello", null, 6000L);
+
+        GboardPatchesSettingsTestHost host = new GboardPatchesSettingsTestHost(context);
+        GboardPatchesSettingsContract.Screen screen = feature.buildScreen(host);
+
+        Object uriRow = externalAccessRow(screen, "Provider URI");
+        assertEquals("CopyRow", uriRow.getClass().getSimpleName());
+
+        ((Runnable) reflect(uriRow, "getAction")).run();
+
+        assertEquals("content://com.akshaykadam.pixelboard.gboard_clipboard_history",
+                host.getCopiedText());
+    }
+
+    @Test
+    public void theSeparateTokenCopyRowIsGone() throws Exception {
+        createClipsTableAndInsert(7, "hello", null, 7000L);
+
+        GboardPatchesSettingsContract.Screen screen =
+                feature.buildScreen(new GboardPatchesSettingsTestHost(context));
+
+        for (Object row : reflectList(reflectList(screen, "getSections").get(1), "getItems")) {
+            assertFalse("Copy token".equals(reflect(row, "getTitle")));
+        }
+    }
+
+    @Test
+    public void historyIsLimitedAndDisclosesTheHiddenEntries() throws Exception {
+        for (int index = 1; index <= 12; index++) {
+            createClipsTableAndInsert(index, "clip " + index, null, index * 1000L);
+        }
+
+        GboardPatchesSettingsContract.Screen screen =
+                feature.buildScreen(new GboardPatchesSettingsTestHost(context));
+
+        List<?> historyItems = reflectList(reflectList(screen, "getSections").get(0), "getItems");
+        // Ten entries plus the disclosure row.
+        assertEquals(11, historyItems.size());
+        Object limitRow = historyItems.get(historyItems.size() - 1);
+        assertEquals("DetailRow", limitRow.getClass().getSimpleName());
+        assertEquals("Older entries hidden", reflect(limitRow, "getTitle"));
+        assertEquals("Showing the 10 most recent of 12 entries.",
+                reflect(limitRow, "getSummary"));
     }
 
     @Test
@@ -122,6 +195,8 @@ public class GboardClipboardHistoryFeatureTest {
 
     @Test
     public void captureWindowIsDisclosedAsTheHistorySectionDescription() throws Exception {
+        createClipsTableAndInsert(8, "hello", null, 8000L);
+
         GboardPatchesSettingsContract.Screen screen =
                 feature.buildScreen(new GboardPatchesSettingsTestHost(context));
 
@@ -133,8 +208,23 @@ public class GboardClipboardHistoryFeatureTest {
                 description);
     }
 
+    private Object externalAccessRow(GboardPatchesSettingsContract.Screen screen, String title)
+            throws Exception {
+        List<?> items = reflectList(reflectList(screen, "getSections").get(1), "getItems");
+        for (Object row : items) {
+            if (title.equals(String.valueOf(reflect(row, "getTitle")))) {
+                return row;
+            }
+        }
+        throw new AssertionError("Missing settings row: " + title);
+    }
+
     private void createClipsTableAndInsert(long id, String text, String uri, long timestamp) {
         File file = context.getDatabasePath("gboard_clipboard.db");
+        File parent = file.getParentFile();
+        if (parent != null) {
+            parent.mkdirs();
+        }
         SQLiteDatabase database = SQLiteDatabase.openOrCreateDatabase(file, null);
         database.execSQL("CREATE TABLE IF NOT EXISTS clips (_id INTEGER PRIMARY KEY NOT NULL, "
                 + "text TEXT, html_text TEXT, item_type INTEGER NOT NULL, "

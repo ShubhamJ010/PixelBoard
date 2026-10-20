@@ -31,7 +31,14 @@ public final class GboardClipboardHistoryFeature
         implements GboardPatchesSettingsContract.Feature {
 
     private static final String TAG = "GboardPatches";
-    private static final int MAX_VISIBLE_ENTRIES = 25;
+    /**
+     * Number of entries rendered on the settings screen.
+     *
+     * <p>The screen is a quick overview, not a full history browser, so only the most recent
+     * entries are listed. Older clips stay in the history and remain reachable through the
+     * exported content provider.
+     */
+    private static final int MAX_VISIBLE_ENTRIES = 10;
     private static final int PREVIEW_LENGTH = 72;
     private static final long REFRESH_INTERVAL_MS = 5000L;
     private static final String IMAGE_MIME_TYPE = "image/*";
@@ -59,10 +66,14 @@ public final class GboardClipboardHistoryFeature
     private final String includeSensitiveSummary;
     private final String accessTokenTitle;
     private final String accessTokenSummary;
-    private final String copyTokenTitle;
+    private final String accessTokenCopiedMessage;
+    private final String providerUriHint;
+    private final String providerUriCopiedMessage;
+    private final String entriesLimitedTitle;
     private final int accessTokenValueResId;
     private final int providerValueResId;
     private final int providerEndpointsValueResId;
+    private final int entriesLimitedSummaryResId;
     private final String providerUriTitle;
     private final String providerEndpointsTitle;
     private final String providerPermissionTitle;
@@ -120,8 +131,15 @@ public final class GboardClipboardHistoryFeature
                 R.string.gboard_patches_clipboard_history_access_token_title);
         accessTokenSummary = GboardSettingsText.get(context,
                 R.string.gboard_patches_clipboard_history_access_token_summary);
-        copyTokenTitle = GboardSettingsText.get(context,
-                R.string.gboard_patches_clipboard_history_copy_token_title);
+        accessTokenCopiedMessage = GboardSettingsText.get(context,
+                R.string.gboard_patches_clipboard_history_access_token_copied_message);
+        providerUriHint = GboardSettingsText.get(context,
+                R.string.gboard_patches_clipboard_history_provider_uri_hint);
+        providerUriCopiedMessage = GboardSettingsText.get(context,
+                R.string.gboard_patches_clipboard_history_provider_uri_copied_message);
+        entriesLimitedTitle = GboardSettingsText.get(context,
+                R.string.gboard_patches_clipboard_history_entries_limited_title);
+        entriesLimitedSummaryResId = R.string.gboard_patches_clipboard_history_entries_limited_summary;
         accessTokenValueResId = R.string.gboard_patches_clipboard_history_access_token_value;
         providerValueResId = R.string.gboard_patches_clipboard_history_provider_value;
         providerEndpointsValueResId =
@@ -190,6 +208,19 @@ public final class GboardClipboardHistoryFeature
                         () -> activateEntry(host, entry),
                         thumbnailUri));
             }
+            if (!entries.isEmpty()) {
+                int totalCount = GboardClipboardHistoryRepository.countHistory(context,
+                        includeSensitive);
+                if (totalCount > entries.size()) {
+                    // The screen only lists the most recent entries, so the hidden remainder is
+                    // disclosed instead of silently truncating the history.
+                    historyRows.add(new GboardPatchesSettingsContract.DetailRow(
+                            entriesLimitedTitle,
+                            GboardSettingsText.format(context, entriesLimitedSummaryResId,
+                                    entries.size(), totalCount),
+                            true));
+                }
+            }
 
             List<GboardPatchesSettingsContract.Row> externalAccessRows =
                     new ArrayList<GboardPatchesSettingsContract.Row>();
@@ -211,19 +242,16 @@ public final class GboardClipboardHistoryFeature
                         GboardClipboardHistorySettings.setSensitiveIncluded(context, value);
                         GboardPatchesSettingsContract.refresh(host);
                     }));
-            externalAccessRows.add(new GboardPatchesSettingsContract.DetailRow(
+            externalAccessRows.add(new GboardPatchesSettingsContract.CopyRow(
                     accessTokenTitle,
                     GboardSettingsText.format(context, accessTokenValueResId, accessToken),
-                    true,
-                    true));
-            externalAccessRows.add(new GboardPatchesSettingsContract.CommandRow(
-                    copyTokenTitle,
                     accessTokenSummary,
+                    true,
                     true,
                     () -> {
                         GboardPatchesSettingsContract.copyTextToClipboard(
-                                host, copyTokenTitle, accessToken);
-                        GboardPatchesSettingsContract.showMessage(host, copyMessage);
+                                host, accessTokenTitle, accessToken);
+                        GboardPatchesSettingsContract.showMessage(host, accessTokenCopiedMessage);
                     }));
             externalAccessRows.add(new GboardPatchesSettingsContract.CommandRow(
                     regenerateTokenTitle,
@@ -233,12 +261,19 @@ public final class GboardClipboardHistoryFeature
                         GboardClipboardHistorySettings.regenerateAccessToken(context);
                         GboardPatchesSettingsContract.refresh(host);
                     }));
-            externalAccessRows.add(new GboardPatchesSettingsContract.DetailRow(
+            String providerUri = GboardSettingsText.format(context, providerValueResId,
+                    GboardClipboardHistoryProvider.AUTHORITY);
+            externalAccessRows.add(new GboardPatchesSettingsContract.CopyRow(
                     providerUriTitle,
-                    GboardSettingsText.format(context, providerValueResId,
-                            GboardClipboardHistoryProvider.AUTHORITY),
+                    providerUri,
+                    providerUriHint,
                     true,
-                    true));
+                    true,
+                    () -> {
+                        GboardPatchesSettingsContract.copyTextToClipboard(
+                                host, providerUriTitle, providerUri);
+                        GboardPatchesSettingsContract.showMessage(host, providerUriCopiedMessage);
+                    }));
             externalAccessRows.add(new GboardPatchesSettingsContract.DetailRow(
                     providerEndpointsTitle,
                     GboardSettingsText.get(context, providerEndpointsValueResId),
@@ -266,7 +301,10 @@ public final class GboardClipboardHistoryFeature
 
             List<GboardPatchesSettingsContract.StatusBlock> statusBlocks =
                     new ArrayList<GboardPatchesSettingsContract.StatusBlock>();
-            if (entries.isEmpty()) {
+            boolean historyEmpty = entries.isEmpty();
+            if (historyEmpty) {
+                // The empty state carries the guidance on its own, so the section list does not
+                // repeat it with an empty "Recent entries" heading.
                 statusBlocks.add(new GboardPatchesSettingsContract.StatusBlock(
                         emptyTitle,
                         emptySummary,
@@ -277,11 +315,13 @@ public final class GboardClipboardHistoryFeature
                     new ArrayList<GboardPatchesSettingsContract.Section>();
             // The capture window is a single line under the section title instead of a card, so it
             // informs without competing with the entries.
-            sections.add(new GboardPatchesSettingsContract.Section(
-                    sectionHistory,
-                    captureWindowSummary,
-                    GboardPatchesSettingsContract.SectionStyle.DEFAULT,
-                    historyRows));
+            if (!historyEmpty) {
+                sections.add(new GboardPatchesSettingsContract.Section(
+                        sectionHistory,
+                        captureWindowSummary,
+                        GboardPatchesSettingsContract.SectionStyle.DEFAULT,
+                        historyRows));
+            }
             sections.add(new GboardPatchesSettingsContract.Section(
                     sectionExternalAccess,
                     externalAccessDescription,

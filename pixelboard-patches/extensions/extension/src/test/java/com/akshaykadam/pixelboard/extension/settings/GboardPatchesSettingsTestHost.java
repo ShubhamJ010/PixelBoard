@@ -11,6 +11,8 @@ public class GboardPatchesSettingsTestHost implements GboardPatchesSettingsContr
     private int managedDialogDismissCount;
     private String openedContentUri;
     private String openedContentMimeType;
+    private String copiedLabel;
+    private String copiedText;
 
     public GboardPatchesSettingsTestHost() {
         this(null);
@@ -75,6 +77,20 @@ public class GboardPatchesSettingsTestHost implements GboardPatchesSettingsContr
 
     public String getOpenedContentMimeType() {
         return openedContentMimeType;
+    }
+
+    @Override
+    public void copyTextToClipboard(String label, String text) {
+        copiedLabel = label;
+        copiedText = text;
+    }
+
+    public String getCopiedLabel() {
+        return copiedLabel;
+    }
+
+    public String getCopiedText() {
+        return copiedText;
     }
 
     @Override

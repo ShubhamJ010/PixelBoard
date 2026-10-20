@@ -826,10 +826,16 @@
         <translation locale="en">The clipboard history database could not be read.</translation>
     </string>
     <string name="gboard_patches_clipboard_history_empty_title">
-        <translation locale="en">No clipboard entries yet</translation>
+        <translation locale="en">Clipboard is empty</translation>
     </string>
     <string name="gboard_patches_clipboard_history_empty_summary">
-        <translation locale="en">Copy something, then reopen this screen.</translation>
+        <translation locale="en">Copies made while PixelBoard is the active keyboard show up here. Copy some text or an image, then reopen this screen.</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_entries_limited_title">
+        <translation locale="en">Older entries hidden</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_entries_limited_summary">
+        <translation locale="en">Showing the %1$d most recent of %2$d entries.</translation>
     </string>
     <string name="gboard_patches_clipboard_history_section_history">
         <translation locale="en">Recent entries</translation>
@@ -874,10 +880,10 @@
         <translation locale="en">Access token</translation>
     </string>
     <string name="gboard_patches_clipboard_history_access_token_summary">
-        <translation locale="en">Copy it to paste into a companion app.</translation>
+        <translation locale="en">Tap to copy the token for a companion app.</translation>
     </string>
-    <string name="gboard_patches_clipboard_history_copy_token_title">
-        <translation locale="en">Copy token</translation>
+    <string name="gboard_patches_clipboard_history_access_token_copied_message">
+        <translation locale="en">Access token copied.</translation>
     </string>
     <string name="gboard_patches_clipboard_history_access_token_value">
         <translation locale="en">Token: %1$s</translation>
@@ -887,6 +893,12 @@
     </string>
     <string name="gboard_patches_clipboard_history_provider_uri_title">
         <translation locale="en">Provider URI</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_provider_uri_hint">
+        <translation locale="en">Tap to copy the provider URI.</translation>
+    </string>
+    <string name="gboard_patches_clipboard_history_provider_uri_copied_message">
+        <translation locale="en">Provider URI copied.</translation>
     </string>
     <string name="gboard_patches_clipboard_history_provider_endpoints_title">
         <translation locale="en">Endpoints</translation>

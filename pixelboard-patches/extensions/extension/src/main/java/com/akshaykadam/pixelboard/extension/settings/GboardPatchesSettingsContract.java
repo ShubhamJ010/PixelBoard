@@ -931,6 +931,40 @@ public final class GboardPatchesSettingsContract {
         }
     }
 
+    /**
+     * Row that shows a value and copies it to the clipboard when it is tapped.
+     *
+     * <p>Used for values such as the access token or the provider URI, which are only useful
+     * once they reach a companion application. Tapping the row replaces the separate copy
+     * command, so the value stays visible and a single tap copies it.
+     */
+    public static class CopyRow extends Row {
+        private final Runnable action;
+        private final boolean monospace;
+        private final String hint;
+
+        public CopyRow(CharSequence title, String summary, String hint, boolean enabled,
+                boolean monospace, Runnable action) {
+            super(title, summary, enabled);
+            this.hint = hint;
+            this.monospace = monospace;
+            this.action = action;
+        }
+
+        public Runnable getAction() {
+            return action;
+        }
+
+        public boolean isMonospace() {
+            return monospace;
+        }
+
+        /** Short affordance line that tells the user the row copies its value. */
+        public String getHint() {
+            return hint;
+        }
+    }
+
     public static class CommandRow extends Row {
         private final Runnable action;
 
